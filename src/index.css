@@ -1,27 +1,51 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ── Theme Variables ── */
+:root, [data-theme="dark"] {
+  --bg:          #0f0f0f;
+  --bg2:         #121212;
+  --card-bg:     #1a1a1a;
+  --nav-bg:      #0f0f0f;
+  --border:      #2a2a2a;
+  --text:        #ffffff;
+  --text-muted:  #aaaaaa;
+  --input-bg:    #121212;
+  --input-border:#303030;
+  --hover-bg:    #272727;
+  --sidebar-bg:  #0f0f0f;
+}
+
+[data-theme="light"] {
+  --bg:          #f9f9f9;
+  --bg2:         #ffffff;
+  --card-bg:     #ffffff;
+  --nav-bg:      #ffffff;
+  --border:      #e0e0e0;
+  --text:        #0f0f0f;
+  --text-muted:  #606060;
+  --input-bg:    #f8f8f8;
+  --input-border:#cccccc;
+  --hover-bg:    #f2f2f2;
+  --sidebar-bg:  #ffffff;
 }
 
 body {
-  background-color: #0f0f0f;
-  color: #fff;
+  background-color: var(--bg);
+  color: var(--text);
   font-family: "Roboto", sans-serif;
-  padding-top: 56px; /* fixed navbar height */
+  padding-top: 56px;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0f0f0f; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
 
 a { text-decoration: none; color: inherit; }
 
-/* ── PC layout: push content right of sidebar ── */
+/* ── PC Sidebar offset ── */
 @media (min-width: 769px) {
-  .page-content {
-    margin-left: 220px;
-  }
+  .page-content { margin-left: 90px; }
 }
 
 /* ── Video Grid ── */
@@ -31,7 +55,6 @@ a { text-decoration: none; color: inherit; }
   gap: 16px;
   padding: 16px;
 }
-
 @media (max-width: 768px) {
   .video-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -41,96 +64,87 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* ── Watch Page ── */
-.watch-container {
-  display: flex;
-  gap: 24px;
-  padding: 16px 20px;
-  max-width: 1600px;
-}
+.watch-container { display: flex; gap: 24px; padding: 16px 20px; max-width: 1600px; }
+.watch-main { flex: 1; min-width: 0; display: flex; gap: 24px; }
+.watch-left { flex: 1; min-width: 0; }
+.watch-player { width: 100%; aspect-ratio: 16/9; border: none; border-radius: 10px; display: block; background: #000; }
+.watch-sidebar { width: 360px; flex-shrink: 0; }
 
-.watch-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  gap: 24px;
-}
-
-.watch-left {
-  flex: 1;
-  min-width: 0;
-}
-
-.watch-player {
-  width: 100%;
-  aspect-ratio: 16/9;
-  border: none;
-  border-radius: 10px;
-  display: block;
-  background: #000;
-}
-
-.watch-sidebar {
-  width: 360px;
-  flex-shrink: 0;
-}
-
-@media (max-width: 1100px) {
-  .watch-sidebar { width: 300px; }
-}
-
+@media (max-width: 1100px) { .watch-sidebar { width: 300px; } }
 @media (max-width: 900px) {
-  .watch-main {
-    flex-direction: column;
-    gap: 16px;
-  }
-  .watch-sidebar {
-    width: 100%;
-  }
-  .watch-container {
-    padding: 10px;
-  }
+  .watch-main { flex-direction: column; gap: 16px; }
+  .watch-sidebar { width: 100%; }
+  .watch-container { padding: 10px; }
 }
 
 /* ── Channel Page ── */
-.channel-info {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  padding: 20px 24px;
-}
-
+.channel-info { display: flex; align-items: flex-start; gap: 20px; padding: 20px 24px; }
 @media (max-width: 600px) {
-  .channel-info {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 16px;
-  }
+  .channel-info { flex-direction: column; align-items: center; text-align: center; padding: 16px; }
 }
 
 /* ── Mobile Bottom Nav ── */
 .mobile-nav {
   display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #0f0f0f;
-  border-top: 1px solid #1e1e1e;
-  z-index: 300;
-  height: 56px;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--nav-bg);
+  border-top: 1px solid var(--border);
+  z-index: 300; height: 56px;
   padding-bottom: env(safe-area-inset-bottom);
 }
-
 @media (max-width: 768px) {
-  .mobile-nav {
-    display: flex;
-    align-items: stretch;
-  }
-  body {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom));
-  }
+  .mobile-nav { display: flex; align-items: stretch; }
+  body { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 }
 
-/* ── Shorts: hide scrollbar ── */
+/* ── Shorts scrollbar hide ── */
 .shorts-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Theme Toggle Button ── */
+.theme-toggle {
+  position: relative;
+  width: 52px; height: 28px;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.4s cubic-bezier(0.4,0,0.2,1);
+  flex-shrink: 0;
+}
+.theme-toggle.dark  { background: linear-gradient(135deg, #1a1a2e, #16213e); }
+.theme-toggle.light { background: linear-gradient(135deg, #87ceeb, #ffd700); }
+
+.theme-toggle .knob {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), background 0.4s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.theme-toggle.dark  .knob { transform: translateX(0px);  background: #f0e68c; }
+.theme-toggle.light .knob { transform: translateX(24px); background: #fff8dc; }
+
+/* Stars (dark mode) */
+.theme-toggle .stars {
+  position: absolute; right: 5px; top: 50%;
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 2px;
+  transition: opacity 0.3s;
+}
+.theme-toggle.light .stars { opacity: 0; }
+.theme-toggle.dark  .stars { opacity: 1; }
+.theme-toggle .star { width: 3px; height: 3px; background: #fff; border-radius: 50%; }
+
+/* Rays (light mode) */
+.theme-toggle .rays {
+  position: absolute; left: 5px; top: 50%;
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 2px;
+  transition: opacity 0.3s;
+}
+.theme-toggle.dark  .rays { opacity: 0; }
+.theme-toggle.light .rays { opacity: 1; }
+.theme-toggle .ray { width: 3px; height: 3px; background: #ff8c00; border-radius: 50%; }
