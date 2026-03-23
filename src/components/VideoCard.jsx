@@ -19,6 +19,9 @@ export default function VideoCard({ video }) {
         <p style={styles.title} onClick={() => navigate(`/watch/${id}`)}>
           {snippet.title?.slice(0, 65)}{snippet.title?.length > 65 ? "..." : ""}
         </p>
+        {video.isLive && <span style={styles.liveBadge}>🔴 LIVE</span>}
+          {snippet.title?.slice(0, 65)}{snippet.title?.length > 65 ? "..." : ""}
+        </p>
         <p
           style={styles.channel}
           onClick={() => navigate(`/channel/${snippet.channelId}`)}
@@ -72,5 +75,15 @@ const styles = {
   views: {
     fontSize: 12,
     color: "#aaa",
+  },
+  liveBadge: {
+    display: "inline-block",
+    background: "#ff0000",
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "bold",
+    padding: "2px 6px",
+    borderRadius: 4,
+    marginBottom: 4,
   },
 };

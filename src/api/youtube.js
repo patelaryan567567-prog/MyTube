@@ -52,8 +52,17 @@ export const getChannelDetails = (channelId) =>
 export const getChannelVideos = (channelId, pageToken = "") =>
   smartGet("/search", { part: "snippet", channelId, type: "video", maxResults: 20, order: "date", pageToken }, VIDEO_KEYS);
 
-export const getChannelLive = (channelId, pageToken = "") =>
-  smartGet("/search", { part: "snippet", channelId, type: "video", maxResults: 20, eventType: "completed", pageToken }, VIDEO_KEYS);
+export const getChannelLive = async (channelId, pageToken = "") => {
+  // Try currently live first, then completed
+  const [liveRes, completedRes] = await Promise.allSettled([
+    smartGet("/search", { part: "snippet", channelId, type: "video", maxResults: 5, eventType: "live", pageToken }, VIDEO_KEYS),
+    smartGet("/search", { part: "snippet", channelId, type: "video", maxResults: 20, eventType: "completed", pageToken }, VIDEO_KEYS),
+  ]);
+  const liveItems = liveRes.status === "fulfilled" ? liveRes.value.data.items.map(v => ({ ...v, isLive: true })) : [];
+  const completedItems = completedRes.status === "fulfilled" ? completedRes.value.data.items : [];
+  const nextPageToken = completedRes.status === "fulfilled" ? completedRes.value.data.nextPageToken : "";
+  return { data: { items: [...liveItems, ...completedItems], nextPageToken } };
+};
 
 export const getChannelPlaylists = (channelId) =>
   smartGet("/playlists", { part: "snippet,contentDetails", channelId, maxResults: 20 }, VIDEO_KEYS);
