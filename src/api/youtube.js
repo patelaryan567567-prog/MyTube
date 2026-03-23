@@ -112,8 +112,21 @@ export const getPlaylistVideos = (playlistId) =>
 export const getVideoComments = (videoId, pageToken = "") =>
   smartGet("/commentThreads", { part: "snippet", videoId, maxResults: 20, order: "relevance", pageToken }, VIDEO_KEYS);
 
-export const getShorts = (pageToken = "") =>
-  smartGet("/search", { part: "snippet", q: "#shorts", type: "video", videoDuration: "short", maxResults: 20, regionCode: "IN", pageToken }, SEARCH_KEYS);
+const SHORTS_QUERIES = [
+  "#shorts funny", "#shorts dance", "#shorts cooking", "#shorts gaming",
+  "#shorts travel", "#shorts music", "#shorts comedy", "#shorts diy",
+  "#shorts animals", "#shorts sports", "#shorts tech", "#shorts art",
+  "#shorts food", "#shorts fitness", "#shorts nature", "#shorts viral",
+];
+
+export const getShorts = (pageToken = "") => {
+  const q = pageToken
+    ? SHORTS_QUERIES[Math.floor(Math.random() * SHORTS_QUERIES.length)]
+    : SHORTS_QUERIES[Math.floor(Math.random() * SHORTS_QUERIES.length)];
+  return api.get("/search", {
+    params: { part: "snippet", q, type: "video", videoDuration: "short", maxResults: 20, regionCode: "IN", pageToken, key: SEARCH_KEYS[0] }
+  });
+};
 
 export const getShortsByIds = (ids) =>
   smartGet("/videos", { part: "snippet,statistics,contentDetails", id: ids.join(",") }, VIDEO_KEYS);
