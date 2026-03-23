@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AiOutlineSearch, AiOutlineClose, AiOutlineClockCircle } from "react-icons/ai";
-import { MdHistory, MdHome, MdHomeFilled, MdSearch, MdSubscriptions, MdSubscriptionsOutlined, MdThumbUpOffAlt, MdSlowMotionVideo, MdOutlineSlowMotionVideo } from "react-icons/md";
+import { MdHistory, MdHome, MdHomeFilled, MdSearch, MdSubscriptions, MdOutlineSubscriptions, MdThumbUpOffAlt, MdSlowMotionVideo, MdOutlineSlowMotionVideo } from "react-icons/md";
 import { RiYoutubeLine } from "react-icons/ri";
 import { HiOutlineMenuAlt3 } from "react-icons/hi";
 import { GoogleLogin } from "@react-oauth/google";
@@ -254,7 +254,7 @@ export default function Navbar() {
             label="Shorts" active={isActive("/shorts")} onClick={() => navigate("/shorts")}
           />
           <SideBtn
-            icon={isActive("/subscriptions") ? <MdSubscriptions size={24}/> : <MdSubscriptionsOutlined size={24}/>}
+            icon={isActive("/subscriptions") ? <MdSubscriptions size={24}/> : <MdOutlineSubscriptions size={24}/>}
             label="Subscriptions" active={isActive("/subscriptions")} onClick={() => navigate("/subscriptions")}
           />
           <SideBtn
@@ -283,7 +283,7 @@ export default function Navbar() {
             <RiYoutubeLine size={28} color="#ff0000" />
           </button>
           <MobBtn
-            icon={isActive("/subscriptions") ? <MdSubscriptions size={24}/> : <MdSubscriptionsOutlined size={24}/>}
+            icon={isActive("/subscriptions") ? <MdSubscriptions size={24}/> : <MdOutlineSubscriptions size={24}/>}
             label="Subscriptions" active={isActive("/subscriptions")} onClick={() => navigate("/subscriptions")}
           />
           <MobBtn
