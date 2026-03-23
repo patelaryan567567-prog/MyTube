@@ -10,12 +10,11 @@ const VIDEO_KEYS  = [import.meta.env.VITE_API_VIDEO,  import.meta.env.VITE_API_E
 const cache = {};
 const smartGet = async (url, params, keys) => {
   const cacheKey = url + JSON.stringify(params);
-  // Don't cache paginated requests
   if (!params.pageToken && cache[cacheKey]) return cache[cacheKey];
   for (const key of keys) {
     try {
       const res = await api.get(url, { params: { ...params, key } });
-      cache[cacheKey] = res;
+      if (!params.pageToken) cache[cacheKey] = res;
       return res;
     } catch (err) {
       const reason = err?.response?.data?.error?.errors?.[0]?.reason;
@@ -48,15 +47,33 @@ export const getRelatedVideos = (query, pageToken = "") =>
   smartGet("/search", { part: "snippet", q: query, type: "video", maxResults: 15, pageToken }, VIDEO_KEYS);
 
 export const getChannelDetails = (channelId) =>
-  smartGet("/channels", { part: "snippet,statistics,brandingSettings", id: channelId }, VIDEO_KEYS);
+  smartGet("/channels", { part: "snippet,statistics,brandingSettings,contentDetails", id: channelId }, VIDEO_KEYS);
 
-export const getChannelVideos = (channelId, pageToken = "") =>
-  smartGet("/search", { part: "snippet", channelId, type: "video", maxResults: 20, order: "date", pageToken }, VIDEO_KEYS);
+// Get uploads playlist ID from channel, then fetch videos from it
+export const getChannelVideos = async (channelId, pageToken = "") => {
+  // Get uploads playlist ID
+  const cKey = "uploads_" + channelId;
+  let uploadsId = cache[cKey];
+  if (!uploadsId) {
+    const cRes = await smartGet("/channels", { part: "contentDetails", id: channelId }, VIDEO_KEYS);
+    uploadsId = cRes.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+    if (!uploadsId) return { data: { items: [], nextPageToken: "" } };
+    cache[cKey] = uploadsId;
+  }
+  const res = await smartGet("/playlistItems", {
+    part: "snippet", playlistId: uploadsId, maxResults: 20, pageToken
+  }, VIDEO_KEYS);
+  // Convert playlistItems format to search format
+  const items = res.data.items.map((item) => ({
+    id: { videoId: item.snippet.resourceId.videoId },
+    snippet: item.snippet,
+  }));
+  return { data: { items, nextPageToken: res.data.nextPageToken || "" } };
+};
 
 export const getChannelLive = async (channelId, pageToken = "") => {
-  // Try currently live first, then completed
   const [liveRes, completedRes] = await Promise.allSettled([
-    smartGet("/search", { part: "snippet", channelId, type: "video", maxResults: 5, eventType: "live", pageToken }, VIDEO_KEYS),
+    smartGet("/search", { part: "snippet", channelId, type: "video", maxResults: 5, eventType: "live" }, VIDEO_KEYS),
     smartGet("/search", { part: "snippet", channelId, type: "video", maxResults: 20, eventType: "completed", pageToken }, VIDEO_KEYS),
   ]);
   const liveItems = liveRes.status === "fulfilled" ? liveRes.value.data.items.map(v => ({ ...v, isLive: true })) : [];
