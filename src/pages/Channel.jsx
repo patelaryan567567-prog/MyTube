@@ -47,6 +47,8 @@ export default function Channel() {
   const [loadingMore, setLoadingMore] = useState(false);
   const observerRef = useRef(null);
   const bottomRef = useRef(null);
+  const nextPageTokenRef = useRef("");
+  const loadingMoreRef = useRef(false);
 
   useEffect(() => {
     const init = async () => {
@@ -79,17 +81,22 @@ export default function Channel() {
       else if (activeTab === "Playlists") res = await getChannelPlaylists(id);
 
       const items = res.data.items.filter((v) => v.snippet);
-      setNextPageToken(res.data.nextPageToken || "");
+      const token = res.data.nextPageToken || "";
+      setNextPageToken(token);
+      nextPageTokenRef.current = token;
 
       if (activeTab === "Videos") { if (reset) setVideos(items); else setVideos((p) => [...p, ...items]); }
       else if (activeTab === "Shorts") { if (reset) setShorts(items); else setShorts((p) => [...p, ...items]); }
       else if (activeTab === "Live") { if (reset) setLiveVideos(items); else setLiveVideos((p) => [...p, ...items]); }
       else if (activeTab === "Playlists") setPlaylists(items);
     } catch (err) { console.error(err); }
-    if (reset) setTabLoading(false); else setLoadingMore(false);
+    if (reset) setTabLoading(false);
+    else { setLoadingMore(false); loadingMoreRef.current = false; }
   }, [id, activeTab]);
 
   useEffect(() => {
+    nextPageTokenRef.current = "";
+    loadingMoreRef.current = false;
     if (activeTab !== "Home") fetchTabData("", true);
   }, [activeTab]);
 
@@ -97,12 +104,21 @@ export default function Channel() {
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
     observerRef.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && nextPageToken && !loadingMore && activeTab !== "Home" && activeTab !== "Playlists")
-        fetchTabData(nextPageToken);
+      if (
+        entries[0].isIntersecting &&
+        nextPageTokenRef.current &&
+        !loadingMoreRef.current &&
+        activeTab !== "Home" &&
+        activeTab !== "Playlists"
+      ) {
+        loadingMoreRef.current = true;
+        setLoadingMore(true);
+        fetchTabData(nextPageTokenRef.current);
+      }
     });
     if (bottomRef.current) observerRef.current.observe(bottomRef.current);
     return () => observerRef.current?.disconnect();
-  }, [nextPageToken, loadingMore, fetchTabData, activeTab]);
+  }, [fetchTabData, activeTab]);
 
   if (loading) return <p style={styles.msg}>Loading...</p>;
   if (!channel) return <p style={styles.msg}>Channel not found</p>;
