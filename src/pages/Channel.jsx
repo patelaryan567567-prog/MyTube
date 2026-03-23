@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getChannelDetails, getChannelVideos, getChannelPlaylists } from "../api/youtube";
+import { getChannelDetails, getChannelVideos, getChannelLive, getChannelPlaylists } from "../api/youtube";
 import VideoCard from "../components/VideoCard";
 import { useAuth } from "../context/AuthContext";
 
@@ -24,6 +24,10 @@ const sec = {
   row: { display: "flex", gap: 12, overflowX: "auto", paddingBottom: 12 },
 };
 
+const isShort = (v) =>
+  v.snippet?.title?.toLowerCase().includes("#shorts") ||
+  v.snippet?.description?.toLowerCase().includes("#shorts");
+
 export default function Channel() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,7 +39,6 @@ export default function Channel() {
   const [subscribed, setSubscribed] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
 
-  // Tab data
   const [homeVideos, setHomeVideos] = useState([]);
   const [homeLive, setHomeLive] = useState([]);
   const [homePlaylists, setHomePlaylists] = useState([]);
@@ -43,7 +46,6 @@ export default function Channel() {
   const [shorts, setShorts] = useState([]);
   const [liveVideos, setLiveVideos] = useState([]);
   const [playlists, setPlaylists] = useState([]);
-  const [nextPageToken, setNextPageToken] = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
   const observerRef = useRef(null);
   const bottomRef = useRef(null);
@@ -56,10 +58,9 @@ export default function Channel() {
       try {
         const cRes = await getChannelDetails(id);
         setChannel(cRes.data.items[0]);
-        // Load home tab data
         const [vRes, lRes, pRes] = await Promise.allSettled([
-          getChannelVideos(id, "", ""),
-          getChannelVideos(id, "", "live"),
+          getChannelVideos(id, ""),
+          getChannelLive(id, ""),
           getChannelPlaylists(id),
         ]);
         if (vRes.status === "fulfilled") setHomeVideos(vRes.value.data.items.slice(0, 8));
@@ -74,21 +75,32 @@ export default function Channel() {
   const fetchTabData = useCallback(async (pageToken = "", reset = false) => {
     if (reset) setTabLoading(true); else setLoadingMore(true);
     try {
-      let res;
-      if (activeTab === "Videos") res = await getChannelVideos(id, pageToken, "");
-      else if (activeTab === "Shorts") res = await getChannelVideos(id, pageToken, "");
-      else if (activeTab === "Live") res = await getChannelVideos(id, pageToken, "live");
-      else if (activeTab === "Playlists") res = await getChannelPlaylists(id);
+      let items = [], token = "";
 
-      const items = res.data.items.filter((v) => v.snippet);
-      const token = res.data.nextPageToken || "";
-      setNextPageToken(token);
+      if (activeTab === "Videos") {
+        const res = await getChannelVideos(id, pageToken);
+        items = res.data.items.filter((v) => v.snippet && !isShort(v));
+        token = res.data.nextPageToken || "";
+        if (reset) setVideos(items); else setVideos((p) => [...p, ...items]);
+
+      } else if (activeTab === "Shorts") {
+        const res = await getChannelVideos(id, pageToken);
+        items = res.data.items.filter((v) => v.snippet && isShort(v));
+        token = res.data.nextPageToken || "";
+        if (reset) setShorts(items); else setShorts((p) => [...p, ...items]);
+
+      } else if (activeTab === "Live") {
+        const res = await getChannelLive(id, pageToken);
+        items = res.data.items.filter((v) => v.snippet);
+        token = res.data.nextPageToken || "";
+        if (reset) setLiveVideos(items); else setLiveVideos((p) => [...p, ...items]);
+
+      } else if (activeTab === "Playlists") {
+        const res = await getChannelPlaylists(id);
+        setPlaylists(res.data.items.filter((v) => v.snippet));
+      }
+
       nextPageTokenRef.current = token;
-
-      if (activeTab === "Videos") { if (reset) setVideos(items); else setVideos((p) => [...p, ...items]); }
-      else if (activeTab === "Shorts") { if (reset) setShorts(items); else setShorts((p) => [...p, ...items]); }
-      else if (activeTab === "Live") { if (reset) setLiveVideos(items); else setLiveVideos((p) => [...p, ...items]); }
-      else if (activeTab === "Playlists") setPlaylists(items);
     } catch (err) { console.error(err); }
     if (reset) setTabLoading(false);
     else { setLoadingMore(false); loadingMoreRef.current = false; }
@@ -100,7 +112,6 @@ export default function Channel() {
     if (activeTab !== "Home") fetchTabData("", true);
   }, [activeTab]);
 
-  // Infinite scroll
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
     observerRef.current = new IntersectionObserver((entries) => {
@@ -131,7 +142,7 @@ export default function Channel() {
 
     if (activeTab === "Home") return (
       <div>
-        {homeLive.length > 0 && <HorizontalSection title="🔴 Live Now" items={homeLive} />}
+        {homeLive.length > 0 && <HorizontalSection title="🔴 Live" items={homeLive} />}
         <HorizontalSection title="Latest Videos" items={homeVideos} />
         {homePlaylists.length > 0 && (
           <div style={sec.wrap}>
@@ -152,13 +163,15 @@ export default function Channel() {
 
     if (activeTab === "Playlists") return (
       <div style={styles.grid}>
-        {playlists.map((p) => (
-          <div key={p.id} style={styles.playlistCard}>
-            <img src={p.snippet.thumbnails?.medium?.url} alt="" style={styles.playlistThumb} />
-            <p style={styles.playlistTitle}>{p.snippet.title}</p>
-            <p style={styles.playlistCount}>{p.contentDetails?.itemCount} videos</p>
-          </div>
-        ))}
+        {playlists.length === 0
+          ? <p style={styles.msg}>No Playlists found</p>
+          : playlists.map((p) => (
+            <div key={p.id} style={styles.playlistCard}>
+              <img src={p.snippet.thumbnails?.medium?.url} alt="" style={styles.playlistThumb} />
+              <p style={styles.playlistTitle}>{p.snippet.title}</p>
+              <p style={styles.playlistCount}>{p.contentDetails?.itemCount} videos</p>
+            </div>
+          ))}
       </div>
     );
 
@@ -177,23 +190,17 @@ export default function Channel() {
     <div>
       <button onClick={() => navigate(-1)} style={styles.backBtn}>← Back</button>
 
-      {/* Banner */}
       <div style={styles.bannerWrap}>
-        {bannerUrl
-          ? <img src={bannerUrl} style={styles.bannerImg} alt="" />
-          : <div style={styles.bannerPlaceholder} />
-        }
+        {bannerUrl ? <img src={bannerUrl} style={styles.bannerImg} alt="" /> : <div style={styles.bannerPlaceholder} />}
       </div>
 
-      {/* Channel Info */}
       <div style={styles.channelInfo}>
         <img src={snippet.thumbnails?.medium?.url} alt={snippet.title} style={styles.avatar} />
         <div style={styles.meta}>
           <h1 style={styles.name}>{snippet.title}</h1>
           <p style={styles.stats}>
             {snippet.customUrl && <span>{snippet.customUrl} &nbsp;•&nbsp;</span>}
-            {Number(statistics?.subscriberCount).toLocaleString()} subscribers
-            &nbsp;•&nbsp;
+            {Number(statistics?.subscriberCount).toLocaleString()} subscribers &nbsp;•&nbsp;
             {Number(statistics?.videoCount).toLocaleString()} videos
           </p>
           <p style={styles.desc}>
@@ -213,7 +220,6 @@ export default function Channel() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div style={styles.tabs}>
         {TABS.map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)}

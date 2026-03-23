@@ -49,8 +49,11 @@ export const getRelatedVideos = (query, pageToken = "") =>
 export const getChannelDetails = (channelId) =>
   smartGet("/channels", { part: "snippet,statistics,brandingSettings", id: channelId }, VIDEO_KEYS);
 
-export const getChannelVideos = (channelId, pageToken = "", eventType = "") =>
-  smartGet("/search", { part: "snippet", channelId, type: "video", maxResults: 20, order: "date", pageToken, ...(eventType && { eventType }) }, VIDEO_KEYS);
+export const getChannelVideos = (channelId, pageToken = "") =>
+  smartGet("/search", { part: "snippet", channelId, type: "video", maxResults: 20, order: "date", pageToken }, VIDEO_KEYS);
+
+export const getChannelLive = (channelId, pageToken = "") =>
+  smartGet("/search", { part: "snippet", channelId, type: "video", maxResults: 20, eventType: "completed", pageToken }, VIDEO_KEYS);
 
 export const getChannelPlaylists = (channelId) =>
   smartGet("/playlists", { part: "snippet,contentDetails", channelId, maxResults: 20 }, VIDEO_KEYS);
