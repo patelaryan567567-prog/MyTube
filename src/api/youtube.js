@@ -120,12 +120,8 @@ const SHORTS_QUERIES = [
 ];
 
 export const getShorts = (pageToken = "") => {
-  const q = pageToken
-    ? SHORTS_QUERIES[Math.floor(Math.random() * SHORTS_QUERIES.length)]
-    : SHORTS_QUERIES[Math.floor(Math.random() * SHORTS_QUERIES.length)];
-  return api.get("/search", {
-    params: { part: "snippet", q, type: "video", videoDuration: "short", maxResults: 20, regionCode: "IN", pageToken, key: SEARCH_KEYS[0] }
-  });
+  const q = SHORTS_QUERIES[Math.floor(Math.random() * SHORTS_QUERIES.length)];
+  return smartGet("/search", { part: "snippet", q, type: "video", videoDuration: "short", maxResults: 20, regionCode: "IN", pageToken }, SEARCH_KEYS);
 };
 
 export const getShortsByIds = (ids) =>
