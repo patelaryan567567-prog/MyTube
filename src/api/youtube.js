@@ -41,11 +41,11 @@ const smartGet = async (url, params, keys) => {
   throw new Error("All API keys exhausted!");
 };
 
-export const getTrending = () =>
-  smartGet("/videos", { part: "snippet,statistics", chart: "mostPopular", maxResults: 20, regionCode: "IN" }, HOME_KEYS);
+export const getTrending = (pageToken = "") =>
+  smartGet("/videos", { part: "snippet,statistics", chart: "mostPopular", maxResults: 20, regionCode: "IN", pageToken }, HOME_KEYS);
 
-export const getVideosByCategory = (categoryId) =>
-  smartGet("/videos", { part: "snippet,statistics", chart: "mostPopular", videoCategoryId: categoryId, maxResults: 20, regionCode: "IN" }, HOME_KEYS);
+export const getVideosByCategory = (categoryId, pageToken = "") =>
+  smartGet("/videos", { part: "snippet,statistics", chart: "mostPopular", videoCategoryId: categoryId, maxResults: 20, regionCode: "IN", pageToken }, HOME_KEYS);
 
 export const searchVideos = (query, pageToken = "") =>
   smartGet("/search", { part: "snippet", q: query, maxResults: 20, pageToken }, SEARCH_KEYS);
