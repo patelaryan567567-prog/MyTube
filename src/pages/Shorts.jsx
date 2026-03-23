@@ -25,7 +25,6 @@ export default function Shorts() {
   const nextPageRef  = useRef("");
   const fetchingRef  = useRef(false);
   const containerRef = useRef(null);
-  const itemRefs     = useRef([]);
 
   // Fetch shorts, filter ≤60s
   const fetchMore = useCallback(async (reset = false) => {
@@ -57,21 +56,17 @@ export default function Shorts() {
     });
   }, []);
 
-  // IntersectionObserver — snap active index
+  // Track active index via scroll position
   useEffect(() => {
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const idx = parseInt(entry.target.dataset.idx);
-          setActiveIdx(idx);
-          // load more when near end
-          if (idx >= shorts.length - 3) fetchMore();
-        }
-      });
-    }, { threshold: 0.6 });
-
-    itemRefs.current.forEach((el) => el && obs.observe(el));
-    return () => obs.disconnect();
+    const el = containerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const idx = Math.round(el.scrollTop / el.clientHeight);
+      setActiveIdx(idx);
+      if (idx >= shorts.length - 3) fetchMore();
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
   }, [shorts, fetchMore]);
 
   const handleLike = (v) => {
@@ -108,8 +103,6 @@ export default function Shorts() {
           return (
             <div
               key={v.id}
-              data-idx={idx}
-              ref={(el) => (itemRefs.current[idx] = el)}
               style={s.slide}
             >
               {/* 9:16 Player */}
@@ -189,6 +182,7 @@ const s = {
     height: "100dvh",
     overflowY: "scroll",
     scrollSnapType: "y mandatory",
+    scrollBehavior: "smooth",
     scrollbarWidth: "none",
   },
   slide: {
