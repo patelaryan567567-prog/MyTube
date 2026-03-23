@@ -49,26 +49,28 @@ export const getRelatedVideos = (query, pageToken = "") =>
 export const getChannelDetails = (channelId) =>
   smartGet("/channels", { part: "snippet,statistics,brandingSettings,contentDetails", id: channelId }, VIDEO_KEYS);
 
-// Get uploads playlist ID from channel, then fetch videos from it
 export const getChannelVideos = async (channelId, pageToken = "") => {
-  // Get uploads playlist ID
-  const cKey = "uploads_" + channelId;
-  let uploadsId = cache[cKey];
-  if (!uploadsId) {
-    const cRes = await smartGet("/channels", { part: "contentDetails", id: channelId }, VIDEO_KEYS);
-    uploadsId = cRes.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
-    if (!uploadsId) return { data: { items: [], nextPageToken: "" } };
-    cache[cKey] = uploadsId;
+  try {
+    const cKey = "uploads_" + channelId;
+    let uploadsId = cache[cKey];
+    if (!uploadsId) {
+      const cRes = await smartGet("/channels", { part: "contentDetails", id: channelId }, VIDEO_KEYS);
+      uploadsId = cRes.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+      if (!uploadsId) return { data: { items: [], nextPageToken: "" } };
+      cache[cKey] = uploadsId;
+    }
+    const res = await smartGet("/playlistItems", {
+      part: "snippet", playlistId: uploadsId, maxResults: 20, pageToken
+    }, VIDEO_KEYS);
+    const items = (res.data.items || []).filter(i => i.snippet?.resourceId?.videoId).map((item) => ({
+      id: { videoId: item.snippet.resourceId.videoId },
+      snippet: { ...item.snippet, thumbnails: item.snippet.thumbnails },
+    }));
+    return { data: { items, nextPageToken: res.data.nextPageToken || "" } };
+  } catch (err) {
+    console.error("getChannelVideos error:", err?.response?.data?.error?.message || err.message);
+    return { data: { items: [], nextPageToken: "" } };
   }
-  const res = await smartGet("/playlistItems", {
-    part: "snippet", playlistId: uploadsId, maxResults: 20, pageToken
-  }, VIDEO_KEYS);
-  // Convert playlistItems format to search format
-  const items = res.data.items.map((item) => ({
-    id: { videoId: item.snippet.resourceId.videoId },
-    snippet: item.snippet,
-  }));
-  return { data: { items, nextPageToken: res.data.nextPageToken || "" } };
 };
 
 export const getChannelLive = async (channelId, pageToken = "") => {
