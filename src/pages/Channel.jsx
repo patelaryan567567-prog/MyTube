@@ -4,35 +4,49 @@ import { getChannelDetails, getChannelVideos, getChannelPlaylists } from "../api
 import VideoCard from "../components/VideoCard";
 import { useAuth } from "../context/AuthContext";
 
-const TABS = ["Videos", "Playlists", "Live"];
+const TABS = ["Home", "Videos", "Shorts", "Live", "Playlists"];
+
+function HorizontalSection({ title, items }) {
+  if (!items?.length) return null;
+  return (
+    <div style={sec.wrap}>
+      <p style={sec.title}>{title}</p>
+      <div style={sec.row}>
+        {items.map((v, i) => v.snippet && <VideoCard key={`${v.id?.videoId || i}`} video={v} />)}
+      </div>
+    </div>
+  );
+}
+
+const sec = {
+  wrap: { padding: "16px 24px 0" },
+  title: { fontSize: 16, fontWeight: "bold", marginBottom: 12, color: "#fff" },
+  row: { display: "flex", gap: 12, overflowX: "auto", paddingBottom: 12 },
+};
 
 export default function Channel() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [channel, setChannel] = useState(null);
-  const [videos, setVideos] = useState([]);
-  const [playlists, setPlaylists] = useState([]);
-  const [activeTab, setActiveTab] = useState("Videos");
+  const [activeTab, setActiveTab] = useState("Home");
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [nextPageToken, setNextPageToken] = useState("");
+  const [tabLoading, setTabLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
+
+  // Tab data
+  const [homeVideos, setHomeVideos] = useState([]);
+  const [homeLive, setHomeLive] = useState([]);
+  const [homePlaylists, setHomePlaylists] = useState([]);
+  const [videos, setVideos] = useState([]);
+  const [shorts, setShorts] = useState([]);
+  const [liveVideos, setLiveVideos] = useState([]);
+  const [playlists, setPlaylists] = useState([]);
+  const [nextPageToken, setNextPageToken] = useState("");
+  const [loadingMore, setLoadingMore] = useState(false);
   const observerRef = useRef(null);
   const bottomRef = useRef(null);
-
-  const fetchVideos = useCallback(async (pageToken = "", reset = false) => {
-    if (reset) setLoading(true); else setLoadingMore(true);
-    try {
-      const type = activeTab === "Live" ? "live" : "video";
-      const res = await getChannelVideos(id, pageToken, type);
-      const items = res.data.items.filter((v) => v.snippet);
-      if (reset) setVideos(items); else setVideos((prev) => [...prev, ...items]);
-      setNextPageToken(res.data.nextPageToken || "");
-    } catch (err) { console.error(err); }
-    if (reset) setLoading(false); else setLoadingMore(false);
-  }, [id, activeTab]);
 
   useEffect(() => {
     const init = async () => {
@@ -40,35 +54,108 @@ export default function Channel() {
       try {
         const cRes = await getChannelDetails(id);
         setChannel(cRes.data.items[0]);
+        // Load home tab data
+        const [vRes, lRes, pRes] = await Promise.allSettled([
+          getChannelVideos(id, "", ""),
+          getChannelVideos(id, "", "live"),
+          getChannelPlaylists(id),
+        ]);
+        if (vRes.status === "fulfilled") setHomeVideos(vRes.value.data.items.slice(0, 8));
+        if (lRes.status === "fulfilled") setHomeLive(lRes.value.data.items.slice(0, 8));
+        if (pRes.status === "fulfilled") setHomePlaylists(pRes.value.data.items.slice(0, 8));
       } catch (err) { console.error(err); }
       setLoading(false);
     };
     init();
   }, [id]);
 
+  const fetchTabData = useCallback(async (pageToken = "", reset = false) => {
+    if (reset) setTabLoading(true); else setLoadingMore(true);
+    try {
+      let res;
+      if (activeTab === "Videos") res = await getChannelVideos(id, pageToken, "");
+      else if (activeTab === "Shorts") res = await getChannelVideos(id, pageToken, "");
+      else if (activeTab === "Live") res = await getChannelVideos(id, pageToken, "live");
+      else if (activeTab === "Playlists") res = await getChannelPlaylists(id);
+
+      const items = res.data.items.filter((v) => v.snippet);
+      setNextPageToken(res.data.nextPageToken || "");
+
+      if (activeTab === "Videos") { if (reset) setVideos(items); else setVideos((p) => [...p, ...items]); }
+      else if (activeTab === "Shorts") { if (reset) setShorts(items); else setShorts((p) => [...p, ...items]); }
+      else if (activeTab === "Live") { if (reset) setLiveVideos(items); else setLiveVideos((p) => [...p, ...items]); }
+      else if (activeTab === "Playlists") setPlaylists(items);
+    } catch (err) { console.error(err); }
+    if (reset) setTabLoading(false); else setLoadingMore(false);
+  }, [id, activeTab]);
+
   useEffect(() => {
-    if (activeTab === "Playlists") {
-      getChannelPlaylists(id).then((res) => setPlaylists(res.data.items)).catch(console.error);
-    } else {
-      fetchVideos("", true);
-    }
-  }, [activeTab, id]);
+    if (activeTab !== "Home") fetchTabData("", true);
+  }, [activeTab]);
 
   // Infinite scroll
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
     observerRef.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && nextPageToken && !loadingMore) fetchVideos(nextPageToken);
+      if (entries[0].isIntersecting && nextPageToken && !loadingMore && activeTab !== "Home" && activeTab !== "Playlists")
+        fetchTabData(nextPageToken);
     });
     if (bottomRef.current) observerRef.current.observe(bottomRef.current);
     return () => observerRef.current?.disconnect();
-  }, [nextPageToken, loadingMore, fetchVideos]);
+  }, [nextPageToken, loadingMore, fetchTabData, activeTab]);
 
-  if (!channel && loading) return <p style={styles.msg}>Loading...</p>;
+  if (loading) return <p style={styles.msg}>Loading...</p>;
   if (!channel) return <p style={styles.msg}>Channel not found</p>;
 
   const { snippet, statistics } = channel;
-  const banner = snippet?.thumbnails?.maxres?.url || snippet?.thumbnails?.high?.url;
+  const bannerUrl = channel.brandingSettings?.image?.bannerExternalUrl;
+
+  const renderContent = () => {
+    if (tabLoading) return <p style={styles.msg}>Loading...</p>;
+
+    if (activeTab === "Home") return (
+      <div>
+        {homeLive.length > 0 && <HorizontalSection title="🔴 Live Now" items={homeLive} />}
+        <HorizontalSection title="Latest Videos" items={homeVideos} />
+        {homePlaylists.length > 0 && (
+          <div style={sec.wrap}>
+            <p style={sec.title}>Playlists</p>
+            <div style={sec.row}>
+              {homePlaylists.map((p) => (
+                <div key={p.id} style={styles.playlistCard}>
+                  <img src={p.snippet.thumbnails?.medium?.url} alt="" style={styles.playlistThumb} />
+                  <p style={styles.playlistTitle}>{p.snippet.title}</p>
+                  <p style={styles.playlistCount}>{p.contentDetails?.itemCount} videos</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+
+    if (activeTab === "Playlists") return (
+      <div style={styles.grid}>
+        {playlists.map((p) => (
+          <div key={p.id} style={styles.playlistCard}>
+            <img src={p.snippet.thumbnails?.medium?.url} alt="" style={styles.playlistThumb} />
+            <p style={styles.playlistTitle}>{p.snippet.title}</p>
+            <p style={styles.playlistCount}>{p.contentDetails?.itemCount} videos</p>
+          </div>
+        ))}
+      </div>
+    );
+
+    const data = activeTab === "Videos" ? videos : activeTab === "Shorts" ? shorts : liveVideos;
+    return (
+      <div style={styles.grid}>
+        {data.length === 0
+          ? <p style={styles.msg}>No {activeTab} found</p>
+          : data.map((v, i) => <VideoCard key={`${v.id?.videoId}-${i}`} video={v} />)
+        }
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -76,34 +163,36 @@ export default function Channel() {
 
       {/* Banner */}
       <div style={styles.bannerWrap}>
-        {banner && <img src={banner} style={styles.bannerImg} alt="" />}
+        {bannerUrl
+          ? <img src={bannerUrl} style={styles.bannerImg} alt="" />
+          : <div style={styles.bannerPlaceholder} />
+        }
       </div>
 
       {/* Channel Info */}
       <div style={styles.channelInfo}>
         <img src={snippet.thumbnails?.medium?.url} alt={snippet.title} style={styles.avatar} />
         <div style={styles.meta}>
-          <div style={styles.nameRow}>
-            <h1 style={styles.name}>{snippet.title}</h1>
-          </div>
+          <h1 style={styles.name}>{snippet.title}</h1>
           <p style={styles.stats}>
             {snippet.customUrl && <span>{snippet.customUrl} &nbsp;•&nbsp;</span>}
-            {Number(statistics?.subscriberCount).toLocaleString()} subscribers &nbsp;•&nbsp;
+            {Number(statistics?.subscriberCount).toLocaleString()} subscribers
+            &nbsp;•&nbsp;
             {Number(statistics?.videoCount).toLocaleString()} videos
           </p>
           <p style={styles.desc}>
             {showFullDesc ? snippet.description : snippet.description?.slice(0, 120)}
             {snippet.description?.length > 120 && (
               <span style={styles.more} onClick={() => setShowFullDesc(!showFullDesc)}>
-                {showFullDesc ? " ...less" : " ...more"}
+                {showFullDesc ? " show less" : " ...more"}
               </span>
             )}
           </p>
           <button
-            onClick={() => { if (!user) return alert("Subscribe karne ke liye login karo!"); setSubscribed(!subscribed); }}
+            onClick={() => { if (!user) return alert("Login karo pehle!"); setSubscribed(!subscribed); }}
             style={{ ...styles.subBtn, background: subscribed ? "#555" : "#fff", color: subscribed ? "#fff" : "#000" }}
           >
-            {subscribed ? "Subscribed" : "Subscribe"}
+            {subscribed ? "✓ Subscribed" : "Subscribe"}
           </button>
         </div>
       </div>
@@ -111,36 +200,16 @@ export default function Channel() {
       {/* Tabs */}
       <div style={styles.tabs}>
         {TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{ ...styles.tab, ...(activeTab === tab ? styles.activeTab : {}) }}
-          >
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            style={{ ...styles.tab, ...(activeTab === tab ? styles.activeTab : {}) }}>
             {tab}
           </button>
         ))}
       </div>
 
-      {/* Content */}
-      {loading ? (
-        <p style={styles.msg}>Loading...</p>
-      ) : activeTab === "Playlists" ? (
-        <div style={styles.grid}>
-          {playlists.map((p) => (
-            <div key={p.id} style={styles.playlistCard}>
-              <img src={p.snippet.thumbnails?.medium?.url} alt="" style={styles.playlistThumb} />
-              <p style={styles.playlistTitle}>{p.snippet.title}</p>
-              <p style={styles.playlistCount}>{p.contentDetails?.itemCount} videos</p>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div style={styles.grid}>
-          {videos.map((v, i) => <VideoCard key={`${v.id?.videoId}-${i}`} video={v} />)}
-        </div>
-      )}
+      {renderContent()}
 
-      <div ref={bottomRef} style={{ textAlign: "center", padding: 20 }}>
+      <div ref={bottomRef} style={{ padding: 20, textAlign: "center" }}>
         {loadingMore && <p style={styles.msg}>Loading more...</p>}
       </div>
     </div>
@@ -149,23 +218,23 @@ export default function Channel() {
 
 const styles = {
   backBtn: { background: "none", border: "none", color: "#aaa", fontSize: 14, cursor: "pointer", padding: "12px 20px", display: "block" },
-  bannerWrap: { width: "100%", height: 200, background: "#1a1a1a", overflow: "hidden" },
+  bannerWrap: { width: "100%", height: 200, overflow: "hidden" },
   bannerImg: { width: "100%", height: "100%", objectFit: "cover" },
+  bannerPlaceholder: { width: "100%", height: "100%", background: "#1a1a1a" },
   channelInfo: { display: "flex", alignItems: "flex-start", gap: 20, padding: "20px 24px" },
   avatar: { width: 90, height: 90, borderRadius: "50%", flexShrink: 0 },
   meta: { flex: 1 },
-  nameRow: { display: "flex", alignItems: "center", gap: 8, marginBottom: 6 },
-  name: { fontSize: 22, fontWeight: "bold" },
+  name: { fontSize: 22, fontWeight: "bold", marginBottom: 6 },
   stats: { fontSize: 13, color: "#aaa", marginBottom: 6 },
   desc: { fontSize: 13, color: "#ccc", lineHeight: 1.5, marginBottom: 12 },
   more: { color: "#3ea6ff", cursor: "pointer" },
   subBtn: { padding: "8px 20px", borderRadius: 20, border: "none", fontWeight: "bold", fontSize: 13, cursor: "pointer" },
-  tabs: { display: "flex", gap: 4, padding: "0 20px", borderBottom: "1px solid #333" },
-  tab: { background: "none", border: "none", color: "#aaa", padding: "12px 16px", cursor: "pointer", fontSize: 14, borderBottom: "2px solid transparent" },
+  tabs: { display: "flex", gap: 0, padding: "0 20px", borderBottom: "1px solid #333", overflowX: "auto" },
+  tab: { background: "none", border: "none", borderBottom: "2px solid transparent", color: "#aaa", padding: "12px 18px", cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" },
   activeTab: { color: "#fff", borderBottom: "2px solid #fff" },
   grid: { display: "flex", flexWrap: "wrap", gap: 16, padding: 24 },
-  playlistCard: { width: 220, cursor: "pointer" },
-  playlistThumb: { width: "100%", height: 124, objectFit: "cover", borderRadius: 8 },
+  playlistCard: { width: 200, cursor: "pointer", flexShrink: 0 },
+  playlistThumb: { width: "100%", height: 112, objectFit: "cover", borderRadius: 8 },
   playlistTitle: { fontSize: 13, fontWeight: "bold", marginTop: 6, color: "#fff" },
   playlistCount: { fontSize: 12, color: "#aaa" },
   msg: { textAlign: "center", marginTop: 40, color: "#aaa" },
