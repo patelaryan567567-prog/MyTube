@@ -4,7 +4,7 @@ import { getChannelDetails, getChannelVideos, getChannelLive, getChannelPlaylist
 import VideoCard from "../components/VideoCard";
 import { useAuth } from "../context/AuthContext";
 
-const TABS = ["Home", "Videos", "Shorts", "Live", "Playlists"];
+const TABS = ["Home", "Videos", "Live", "Playlists"];
 
 function HorizontalSection({ title, items }) {
   if (!items?.length) return null;
@@ -21,7 +21,7 @@ function HorizontalSection({ title, items }) {
 const sec = {
   wrap: { padding: "16px 24px 0" },
   title: { fontSize: 16, fontWeight: "bold", marginBottom: 12, color: "#fff" },
-  row: { display: "flex", gap: 12, overflowX: "auto", paddingBottom: 12 },
+  row: { display: "flex", gap: 16, overflowX: "auto", paddingBottom: 16, scrollbarWidth: "thin" },
 };
 
 const isShort = (v) =>
@@ -79,10 +79,7 @@ export default function Channel() {
 
       if (activeTab === "Videos") {
         const res = await getChannelVideos(id, pageToken);
-        const allItems = res.data.items.filter((v) => v.snippet);
-        const nonShorts = allItems.filter((v) => !isShort(v));
-        // If all videos are shorts, show all (channel is shorts-only)
-        items = nonShorts.length > 0 ? nonShorts : allItems;
+        items = res.data.items.filter((v) => v.snippet);
         token = res.data.nextPageToken || "";
         if (reset) setVideos(items); else setVideos((p) => [...p, ...items]);
 
@@ -178,7 +175,7 @@ export default function Channel() {
       </div>
     );
 
-    const data = activeTab === "Videos" ? videos : activeTab === "Shorts" ? shorts : liveVideos;
+    const data = activeTab === "Videos" ? videos : liveVideos;
     return (
       <div style={styles.grid}>
         {data.length === 0

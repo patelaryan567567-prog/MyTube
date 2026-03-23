@@ -42,6 +42,8 @@ const styles = {
   card: {
     cursor: "pointer",
     width: 280,
+    minWidth: 280,
+    flexShrink: 0,
     background: "transparent",
   },
   thumbWrap: {
