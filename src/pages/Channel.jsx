@@ -79,7 +79,10 @@ export default function Channel() {
 
       if (activeTab === "Videos") {
         const res = await getChannelVideos(id, pageToken);
-        items = res.data.items.filter((v) => v.snippet && !isShort(v));
+        const allItems = res.data.items.filter((v) => v.snippet);
+        const nonShorts = allItems.filter((v) => !isShort(v));
+        // If all videos are shorts, show all (channel is shorts-only)
+        items = nonShorts.length > 0 ? nonShorts : allItems;
         token = res.data.nextPageToken || "";
         if (reset) setVideos(items); else setVideos((p) => [...p, ...items]);
 

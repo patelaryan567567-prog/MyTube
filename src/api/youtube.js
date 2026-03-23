@@ -10,7 +10,8 @@ const VIDEO_KEYS  = [import.meta.env.VITE_API_VIDEO,  import.meta.env.VITE_API_E
 const cache = {};
 const smartGet = async (url, params, keys) => {
   const cacheKey = url + JSON.stringify(params);
-  if (cache[cacheKey]) return cache[cacheKey];
+  // Don't cache paginated requests
+  if (!params.pageToken && cache[cacheKey]) return cache[cacheKey];
   for (const key of keys) {
     try {
       const res = await api.get(url, { params: { ...params, key } });
