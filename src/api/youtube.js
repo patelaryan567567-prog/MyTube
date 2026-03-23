@@ -40,6 +40,9 @@ export const getTrending = () =>
 export const getVideosByCategory = (categoryId) =>
   smartGet("/videos", { part: "snippet,statistics", chart: "mostPopular", videoCategoryId: categoryId, maxResults: 20, regionCode: "IN" }, HOME_KEYS);
 
+export const getSearchSuggestions = (query) =>
+  smartGet("/search", { part: "snippet", q: query, maxResults: 8, type: "video" }, SEARCH_KEYS);
+
 export const searchVideos = (query) =>
   smartGet("/search", { part: "snippet", q: query, maxResults: 20 }, SEARCH_KEYS);
 

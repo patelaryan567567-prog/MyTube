@@ -1,19 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AiOutlineSearch } from "react-icons/ai";
 import { RiYoutubeLine } from "react-icons/ri";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { useAuth } from "../context/AuthContext";
+import { getSearchSuggestions } from "../api/youtube";
 
 export default function Navbar() {
   const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSugg, setShowSugg] = useState(false);
   const navigate = useNavigate();
   const { user, setUser } = useAuth();
+  const debounceRef = useRef(null);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (query.trim()) navigate(`/search?q=${query}`);
+  useEffect(() => {
+    if (!query.trim()) { setSuggestions([]); return; }
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await getSearchSuggestions(query);
+        setSuggestions(res.data.items.map((i) => i.snippet.title));
+      } catch { setSuggestions([]); }
+    }, 400);
+  }, [query]);
+
+  const handleSearch = (q) => {
+    const searchQuery = q || query;
+    if (!searchQuery.trim()) return;
+    setShowSugg(false);
+    setQuery(searchQuery);
+    navigate(`/search?q=${searchQuery}`);
   };
 
   return (
@@ -23,27 +41,40 @@ export default function Navbar() {
         <span style={styles.logoText}>MyTube</span>
       </div>
 
-      <form onSubmit={handleSearch} style={styles.searchForm}>
-        <input
-          style={styles.input}
-          type="text"
-          placeholder="Search..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <button type="submit" style={styles.searchBtn}>
-          <AiOutlineSearch size={20} />
-        </button>
-      </form>
+      <div style={styles.searchWrap}>
+        <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} style={styles.searchForm}>
+          <input
+            style={styles.input}
+            type="text"
+            placeholder="Search..."
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setShowSugg(true); }}
+            onFocus={() => setShowSugg(true)}
+            onBlur={() => setTimeout(() => setShowSugg(false), 150)}
+          />
+          <button type="submit" style={styles.searchBtn}>
+            <AiOutlineSearch size={20} />
+          </button>
+        </form>
+
+        {showSugg && suggestions.length > 0 && (
+          <div style={styles.dropdown}>
+            {suggestions.map((s, i) => (
+              <div key={i} style={styles.suggItem} onMouseDown={() => handleSearch(s)}>
+                <AiOutlineSearch size={14} color="#aaa" />
+                <span style={styles.suggText}>{s.slice(0, 60)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div style={styles.authSection}>
         {user ? (
           <div style={styles.userInfo}>
             <img src={user.picture} alt={user.name} style={styles.avatar} />
             <span style={styles.userName}>{user.name}</span>
-            <button style={styles.logoutBtn} onClick={() => setUser(null)}>
-              Logout
-            </button>
+            <button style={styles.logoutBtn} onClick={() => setUser(null)}>Logout</button>
           </div>
         ) : (
           <GoogleLogin
@@ -69,23 +100,12 @@ const styles = {
     top: 0,
     zIndex: 100,
   },
-  logo: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    cursor: "pointer",
-  },
-  logoText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  searchForm: {
-    display: "flex",
-    alignItems: "center",
-  },
+  logo: { display: "flex", alignItems: "center", gap: 6, cursor: "pointer" },
+  logoText: { fontSize: 20, fontWeight: "bold", color: "#fff" },
+  searchWrap: { position: "relative" },
+  searchForm: { display: "flex", alignItems: "center" },
   input: {
-    width: 300,
+    width: 320,
     padding: "8px 14px",
     borderRadius: "20px 0 0 20px",
     border: "1px solid #333",
@@ -103,24 +123,32 @@ const styles = {
     color: "#fff",
     cursor: "pointer",
   },
-  authSection: {
+  dropdown: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    width: "100%",
+    background: "#212121",
+    borderRadius: "0 0 12px 12px",
+    border: "1px solid #333",
+    borderTop: "none",
+    zIndex: 200,
+    overflow: "hidden",
+  },
+  suggItem: {
     display: "flex",
     alignItems: "center",
+    gap: 10,
+    padding: "10px 16px",
+    cursor: "pointer",
+    transition: "background 0.15s",
+    ":hover": { background: "#333" },
   },
-  userInfo: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: "50%",
-  },
-  userName: {
-    fontSize: 13,
-    color: "#fff",
-  },
+  suggText: { fontSize: 13, color: "#fff" },
+  authSection: { display: "flex", alignItems: "center" },
+  userInfo: { display: "flex", alignItems: "center", gap: 8 },
+  avatar: { width: 32, height: 32, borderRadius: "50%" },
+  userName: { fontSize: 13, color: "#fff" },
   logoutBtn: {
     padding: "5px 12px",
     background: "#333",
