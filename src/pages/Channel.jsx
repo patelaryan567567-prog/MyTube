@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getChannelDetails, getChannelVideos } from "../api/youtube";
 import VideoCard from "../components/VideoCard";
 
 export default function Channel() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [channel, setChannel] = useState(null);
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +35,7 @@ export default function Channel() {
 
   return (
     <div>
+      <button onClick={() => navigate(-1)} style={styles.backBtn}>← Back</button>
       {/* Banner */}
       <div style={styles.banner}>
         {snippet.brandingSettings?.image?.bannerExternalUrl && (
@@ -66,6 +68,7 @@ export default function Channel() {
 }
 
 const styles = {
+  backBtn: { background: "none", border: "none", color: "#aaa", fontSize: 14, cursor: "pointer", padding: "12px 24px", display: "block" },
   banner: { width: "100%", background: "#1a1a1a", height: 180, overflow: "hidden" },
   bannerImg: { width: "100%", height: "100%", objectFit: "cover" },
   channelInfo: { display: "flex", alignItems: "center", gap: 20, padding: "20px 24px" },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getVideoById, getRelatedVideos } from "../api/youtube";
 import { useAuth } from "../context/AuthContext";
 import VideoCard from "../components/VideoCard";
@@ -8,6 +8,7 @@ import { MdOutlineSubscriptions } from "react-icons/md";
 
 export default function Watch() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [video, setVideo] = useState(null);
   const [related, setRelated] = useState([]);
@@ -58,115 +59,79 @@ export default function Watch() {
 
   return (
     <div style={styles.container}>
+      <button onClick={() => navigate(-1)} style={styles.backBtn}>← Back</button>
       <div style={styles.main}>
-        <iframe
-          style={styles.player}
-          src={`https://www.youtube.com/embed/${id}?autoplay=1`}
-          title={snippet.title}
-          allowFullScreen
-          allow="autoplay; encrypted-media"
-        />
-
-        <h2 style={styles.title}>{snippet.title}</h2>
-
-        <div style={styles.actions}>
-          <span style={styles.views}>
-            {Number(statistics?.viewCount).toLocaleString()} views
-          </span>
-          <div style={styles.btns}>
-            <button onClick={handleLike} style={{ ...styles.btn, color: liked ? "#3ea6ff" : "#fff" }}>
-              {liked ? <AiFillLike size={20} /> : <AiOutlineLike size={20} />}
-              &nbsp;{Number(statistics?.likeCount).toLocaleString()}
-            </button>
-            <button
-              onClick={handleSubscribe}
-              style={{ ...styles.subBtn, background: subscribed ? "#555" : "#ff0000" }}
-            >
-              <MdOutlineSubscriptions size={16} />
-              &nbsp;{subscribed ? "Subscribed" : "Subscribe"}
-            </button>
+        <div style={styles.left}>
+          <iframe
+            style={styles.player}
+            src={`https://www.youtube.com/embed/${id}?autoplay=1`}
+            title={snippet.title}
+            allowFullScreen
+            allow="autoplay; encrypted-media"
+          />
+          <h2 style={styles.title}>{snippet.title}</h2>
+          <div style={styles.actions}>
+            <span style={styles.views}>{Number(statistics?.viewCount).toLocaleString()} views</span>
+            <div style={styles.btns}>
+              <button onClick={handleLike} style={{ ...styles.btn, color: liked ? "#3ea6ff" : "#fff" }}>
+                {liked ? <AiFillLike size={20} /> : <AiOutlineLike size={20} />}
+                &nbsp;{Number(statistics?.likeCount).toLocaleString()}
+              </button>
+              <button onClick={handleSubscribe} style={{ ...styles.subBtn, background: subscribed ? "#555" : "#ff0000" }}>
+                <MdOutlineSubscriptions size={16} />
+                &nbsp;{subscribed ? "Subscribed" : "Subscribe"}
+              </button>
+            </div>
           </div>
-        </div>
-
-        <div style={styles.channelRow}>
-          <div>
+          <div style={styles.channelRow}>
             <p style={styles.channelName}>{snippet.channelTitle}</p>
             <p style={styles.desc}>{snippet.description?.slice(0, 200)}...</p>
           </div>
-        </div>
-
-        {/* Comments */}
-        <div style={styles.commentsSection}>
-          <p style={styles.commentsTitle}>Comments</p>
-          <form onSubmit={handleComment} style={styles.commentForm}>
-            {user && <img src={user.picture} alt="" style={styles.commentAvatar} />}
-            <input
-              style={styles.commentInput}
-              placeholder={user ? "Add a comment..." : "Login to comment..."}
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              disabled={!user}
-            />
-            <button type="submit" style={styles.commentBtn} disabled={!user}>Post</button>
-          </form>
-
-          {comments.map((c) => (
-            <div key={c.id} style={styles.commentItem}>
-              <img src={c.pic} alt="" style={styles.commentAvatar} />
-              <div>
-                <p style={styles.commentUser}>{c.user}</p>
-                <p style={styles.commentText}>{c.text}</p>
+          <div style={styles.commentsSection}>
+            <p style={styles.commentsTitle}>Comments</p>
+            <form onSubmit={handleComment} style={styles.commentForm}>
+              {user && <img src={user.picture} alt="" style={styles.commentAvatar} />}
+              <input
+                style={styles.commentInput}
+                placeholder={user ? "Add a comment..." : "Login to comment..."}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                disabled={!user}
+              />
+              <button type="submit" style={styles.commentBtn} disabled={!user}>Post</button>
+            </form>
+            {comments.map((c) => (
+              <div key={c.id} style={styles.commentItem}>
+                <img src={c.pic} alt="" style={styles.commentAvatar} />
+                <div>
+                  <p style={styles.commentUser}>{c.user}</p>
+                  <p style={styles.commentText}>{c.text}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-
-      <div style={styles.sidebar}>
-        <p style={{ color: "#aaa", marginBottom: 10 }}>Related Videos</p>
-        {related.map((v) => v.snippet && <VideoCard key={v.id?.videoId} video={v} />)}
+        <div style={styles.sidebar}>
+          <p style={{ color: "#aaa", marginBottom: 10 }}>Related Videos</p>
+          {related.map((v) => v.snippet && <VideoCard key={v.id?.videoId} video={v} />)}
+        </div>
       </div>
     </div>
   );
 }
 
 const styles = {
-  container: { display: "flex", gap: 20, padding: 20 },
-  main: { flex: 1 },
+  container: { padding: 20 },
+  backBtn: { background: "none", border: "none", color: "#aaa", fontSize: 14, cursor: "pointer", marginBottom: 12, padding: 0 },
+  main: { display: "flex", gap: 20 },
+  left: { flex: 1 },
   player: { width: "100%", height: 480, border: "none", borderRadius: 8 },
   title: { marginTop: 12, fontSize: 18, fontWeight: "bold" },
-  actions: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    margin: "10px 0",
-    borderBottom: "1px solid #333",
-    paddingBottom: 10,
-  },
+  actions: { display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0", borderBottom: "1px solid #333", paddingBottom: 10 },
   views: { color: "#aaa", fontSize: 13 },
   btns: { display: "flex", gap: 10 },
-  btn: {
-    display: "flex",
-    alignItems: "center",
-    background: "#272727",
-    border: "none",
-    color: "#fff",
-    padding: "7px 14px",
-    borderRadius: 20,
-    cursor: "pointer",
-    fontSize: 13,
-  },
-  subBtn: {
-    display: "flex",
-    alignItems: "center",
-    border: "none",
-    color: "#fff",
-    padding: "7px 16px",
-    borderRadius: 20,
-    cursor: "pointer",
-    fontSize: 13,
-    fontWeight: "bold",
-  },
+  btn: { display: "flex", alignItems: "center", background: "#272727", border: "none", color: "#fff", padding: "7px 14px", borderRadius: 20, cursor: "pointer", fontSize: 13 },
+  subBtn: { display: "flex", alignItems: "center", border: "none", color: "#fff", padding: "7px 16px", borderRadius: 20, cursor: "pointer", fontSize: 13, fontWeight: "bold" },
   channelRow: { margin: "10px 0" },
   channelName: { fontWeight: "bold", fontSize: 15 },
   desc: { color: "#ccc", fontSize: 13, lineHeight: 1.6, marginTop: 4 },
@@ -174,26 +139,8 @@ const styles = {
   commentsTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 12 },
   commentForm: { display: "flex", alignItems: "center", gap: 10, marginBottom: 20 },
   commentAvatar: { width: 32, height: 32, borderRadius: "50%" },
-  commentInput: {
-    flex: 1,
-    background: "transparent",
-    border: "none",
-    borderBottom: "1px solid #444",
-    color: "#fff",
-    fontSize: 13,
-    padding: "6px 0",
-    outline: "none",
-  },
-  commentBtn: {
-    background: "#3ea6ff",
-    border: "none",
-    color: "#000",
-    padding: "6px 14px",
-    borderRadius: 20,
-    cursor: "pointer",
-    fontWeight: "bold",
-    fontSize: 12,
-  },
+  commentInput: { flex: 1, background: "transparent", border: "none", borderBottom: "1px solid #444", color: "#fff", fontSize: 13, padding: "6px 0", outline: "none" },
+  commentBtn: { background: "#3ea6ff", border: "none", color: "#000", padding: "6px 14px", borderRadius: 20, cursor: "pointer", fontWeight: "bold", fontSize: 12 },
   commentItem: { display: "flex", gap: 10, marginBottom: 16 },
   commentUser: { fontSize: 12, fontWeight: "bold", color: "#aaa", marginBottom: 2 },
   commentText: { fontSize: 13, color: "#fff" },
