@@ -3,9 +3,21 @@ import axios from "axios";
 const BASE_URL = "https://www.googleapis.com/youtube/v3";
 const api = axios.create({ baseURL: BASE_URL });
 
-const HOME_KEYS   = [import.meta.env.VITE_API_HOME,   import.meta.env.VITE_API_EXTRA3, import.meta.env.VITE_API_EXTRA4];
-const SEARCH_KEYS = [import.meta.env.VITE_API_EXTRA3, import.meta.env.VITE_API_EXTRA4];
-const VIDEO_KEYS  = [import.meta.env.VITE_API_VIDEO,  import.meta.env.VITE_API_EXTRA3, import.meta.env.VITE_API_EXTRA4];
+const ALL_KEYS = [
+  import.meta.env.VITE_API_HOME,
+  import.meta.env.VITE_API_SEARCH,
+  import.meta.env.VITE_API_VIDEO,
+  import.meta.env.VITE_API_EXTRA,
+  import.meta.env.VITE_API_EXTRA2,
+  import.meta.env.VITE_API_EXTRA3,
+  import.meta.env.VITE_API_EXTRA4,
+  import.meta.env.VITE_API_EXTRA5,
+  import.meta.env.VITE_API_EXTRA6,
+].filter(Boolean);
+
+const HOME_KEYS   = [import.meta.env.VITE_API_HOME,   ...ALL_KEYS.filter(k => k !== import.meta.env.VITE_API_HOME)];
+const SEARCH_KEYS = [import.meta.env.VITE_API_SEARCH, ...ALL_KEYS.filter(k => k !== import.meta.env.VITE_API_SEARCH)];
+const VIDEO_KEYS  = [import.meta.env.VITE_API_VIDEO,  ...ALL_KEYS.filter(k => k !== import.meta.env.VITE_API_VIDEO)];
 
 const cache = {};
 const smartGet = async (url, params, keys) => {
