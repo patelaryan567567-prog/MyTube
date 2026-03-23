@@ -12,7 +12,11 @@ function HorizontalSection({ title, items }) {
     <div style={sec.wrap}>
       <p style={sec.title}>{title}</p>
       <div style={sec.row}>
-        {items.map((v, i) => v.snippet && <VideoCard key={`${v.id?.videoId || i}`} video={v} />)}
+        {items.map((v, i) => v.snippet && (
+          <div key={`${v.id?.videoId || i}`} style={sec.card}>
+            <VideoCard video={v} />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -20,8 +24,9 @@ function HorizontalSection({ title, items }) {
 
 const sec = {
   wrap: { padding: "16px 24px 0" },
-  title: { fontSize: 16, fontWeight: "bold", marginBottom: 12, color: "#fff" },
+  title: { fontSize: 16, fontWeight: "bold", marginBottom: 12, color: "var(--text)" },
   row: { display: "flex", gap: 16, overflowX: "auto", paddingBottom: 16, scrollbarWidth: "thin" },
+  card: { flexShrink: 0, width: 280 },
 };
 
 const isShort = (v) =>
@@ -161,7 +166,7 @@ export default function Channel() {
     );
 
     if (activeTab === "Playlists") return (
-      <div style={styles.grid}>
+      <div style={styles.playlistGrid}>
         {playlists.length === 0
           ? <p style={styles.msg}>No Playlists found</p>
           : playlists.map((p) => (
@@ -176,7 +181,7 @@ export default function Channel() {
 
     const data = activeTab === "Videos" ? videos : liveVideos;
     return (
-      <div style={styles.grid}>
+      <div className="video-grid">
         {data.length === 0
           ? <p style={styles.msg}>No {activeTab} found</p>
           : data.map((v, i) => <VideoCard key={`${v.id?.videoId}-${i}`} video={v} />)
@@ -246,25 +251,25 @@ export default function Channel() {
 }
 
 const styles = {
-  backBtn: { background: "none", border: "none", color: "#aaa", fontSize: 14, cursor: "pointer", padding: "12px 20px", display: "block" },
+  backBtn: { background: "none", border: "none", color: "var(--text-muted)", fontSize: 14, cursor: "pointer", padding: "12px 20px", display: "block" },
   bannerWrap: { width: "100%", height: 200, overflow: "hidden" },
   bannerImg: { width: "100%", height: "100%", objectFit: "cover" },
-  bannerPlaceholder: { width: "100%", height: "100%", background: "#1a1a1a" },
+  bannerPlaceholder: { width: "100%", height: "100%", background: "var(--card-bg)" },
   channelInfo: { display: "flex", alignItems: "flex-start", gap: 20, padding: "20px 24px" },
   avatar: { width: 90, height: 90, borderRadius: "50%", flexShrink: 0 },
   meta: { flex: 1 },
-  name: { fontSize: 22, fontWeight: "bold", marginBottom: 6 },
-  stats: { fontSize: 13, color: "#aaa", marginBottom: 6 },
-  desc: { fontSize: 13, color: "#ccc", lineHeight: 1.5, marginBottom: 12 },
+  name: { fontSize: 22, fontWeight: "bold", marginBottom: 6, color: "var(--text)" },
+  stats: { fontSize: 13, color: "var(--text-muted)", marginBottom: 6 },
+  desc: { fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 12 },
   more: { color: "#3ea6ff", cursor: "pointer" },
   subBtn: { padding: "8px 20px", borderRadius: 20, border: "none", fontWeight: "bold", fontSize: 13, cursor: "pointer" },
-  tabs: { display: "flex", gap: 0, padding: "0 20px", borderBottom: "1px solid #333", overflowX: "auto" },
-  tab: { background: "none", border: "none", borderBottom: "2px solid transparent", color: "#aaa", padding: "12px 18px", cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" },
-  activeTab: { color: "#fff", borderBottom: "2px solid #fff" },
-  grid: { display: "flex", flexWrap: "wrap", gap: 16, padding: 24 },
+  tabs: { display: "flex", gap: 0, padding: "0 20px", borderBottom: "1px solid var(--border)", overflowX: "auto" },
+  tab: { background: "none", border: "none", borderBottom: "2px solid transparent", color: "var(--text-muted)", padding: "12px 18px", cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" },
+  activeTab: { color: "var(--text)", borderBottom: "2px solid var(--text)" },
+  playlistGrid: { display: "flex", flexWrap: "wrap", gap: 16, padding: 24 },
   playlistCard: { width: 200, cursor: "pointer", flexShrink: 0 },
   playlistThumb: { width: "100%", height: 112, objectFit: "cover", borderRadius: 8 },
-  playlistTitle: { fontSize: 13, fontWeight: "bold", marginTop: 6, color: "#fff" },
-  playlistCount: { fontSize: 12, color: "#aaa" },
-  msg: { textAlign: "center", marginTop: 40, color: "#aaa" },
+  playlistTitle: { fontSize: 13, fontWeight: "bold", marginTop: 6, color: "var(--text)" },
+  playlistCount: { fontSize: 12, color: "var(--text-muted)" },
+  msg: { textAlign: "center", marginTop: 40, color: "var(--text-muted)" },
 };
