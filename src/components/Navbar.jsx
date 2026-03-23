@@ -34,7 +34,8 @@ export default function Navbar() {
   const handleSearch = (sugg) => {
     if (sugg?.type === "channel") {
       setShowSugg(false);
-      navigate(`/channel/${sugg.id}`);
+      setQuery(sugg.title);
+      navigate(`/search?q=${sugg.title}`);
       return;
     }
     const searchQuery = sugg?.title || query;
