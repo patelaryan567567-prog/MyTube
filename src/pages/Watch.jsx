@@ -12,38 +12,31 @@ const parseDuration = (iso) => {
   const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!m) return null;
   const h = parseInt(m[1] || 0), min = parseInt(m[2] || 0), sec = parseInt(m[3] || 0);
-  if (h > 0) return `${h}:${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-  return `${min}:${String(sec).padStart(2, "0")}`;
+  return h > 0 ? `${h}:${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}` : `${min}:${String(sec).padStart(2,"0")}`;
 };
 
-// Parse timestamps like "1:23" or "12:34" in description into clickable links
-function DescriptionWithTimestamps({ text, videoId }) {
+function Description({ text, videoId }) {
   const [expanded, setExpanded] = useState(false);
-  const display = expanded ? text : text?.slice(0, 250);
+  const display = expanded ? text : text?.slice(0, 200);
   const parts = (display || "").split(/(\d{1,2}:\d{2}(?::\d{2})?)/g);
   return (
     <div style={ds.wrap}>
       <p style={ds.text}>
-        {parts.map((part, i) =>
-          /^\d{1,2}:\d{2}(?::\d{2})?$/.test(part) ? (
-            <a key={i} href={`https://www.youtube.com/watch?v=${videoId}&t=${part}`}
-              target="_blank" rel="noreferrer" style={ds.ts}>{part}</a>
-          ) : part
+        {parts.map((p, i) =>
+          /^\d{1,2}:\d{2}(?::\d{2})?$/.test(p)
+            ? <a key={i} href={`https://www.youtube.com/watch?v=${videoId}&t=${p}`} target="_blank" rel="noreferrer" style={ds.ts}>{p}</a>
+            : p
         )}
-        {!expanded && text?.length > 250 && (
-          <span style={ds.more} onClick={() => setExpanded(true)}> ...more</span>
-        )}
-        {expanded && (
-          <span style={ds.more} onClick={() => setExpanded(false)}> show less</span>
-        )}
+        {!expanded && text?.length > 200 && <span style={ds.more} onClick={() => setExpanded(true)}> ...more</span>}
+        {expanded && <span style={ds.more} onClick={() => setExpanded(false)}> show less</span>}
       </p>
     </div>
   );
 }
 const ds = {
-  wrap: { marginTop: 8 },
+  wrap: { marginTop: 6 },
   text: { fontSize: 13, color: "#ccc", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" },
-  ts: { color: "#3ea6ff", textDecoration: "none", fontWeight: "bold" },
+  ts:   { color: "#3ea6ff", textDecoration: "none", fontWeight: "bold" },
   more: { color: "#3ea6ff", cursor: "pointer", fontWeight: "bold" },
 };
 
@@ -52,29 +45,30 @@ export default function Watch() {
   const navigate = useNavigate();
   const { user, toggleSubscription, isSubscribed, toggleWatchLater, isWatchLater, toggleLiked, isLiked } = useAuth();
   const { setMini } = useMiniPlayer();
-  const [video, setVideo]               = useState(null);
-  const [related, setRelated]           = useState([]);
-  const [comment, setComment]           = useState("");
-  const [localComments, setLocalComments] = useState([]);
-  const [ytComments, setYtComments]     = useState([]);
+
+  const [video, setVideo]                   = useState(null);
+  const [related, setRelated]               = useState([]);
+  const [comment, setComment]               = useState("");
+  const [localComments, setLocalComments]   = useState([]);
+  const [ytComments, setYtComments]         = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentsNextPage, setCommentsNextPage] = useState("");
-  const [loadingMore, setLoadingMore]   = useState(false);
-  const [copied, setCopied]             = useState(false);
+  const [loadingMore, setLoadingMore]       = useState(false);
+  const [copied, setCopied]                 = useState(false);
   const playerRef = useRef(null);
 
   useEffect(() => {
-    setLocalComments([]); setYtComments([]); setCommentsNextPage("");
-    const fetchData = async () => {
+    setLocalComments([]); setYtComments([]); setCommentsNextPage(""); setVideo(null);
+    (async () => {
       try {
         const vRes = await getVideoById(id);
-        const videoData = vRes.data.items[0];
-        setVideo(videoData);
-        const rRes = await getRelatedVideos(videoData.snippet.title);
+        const v = vRes.data.items[0];
+        setVideo(v);
+        const rRes = await getRelatedVideos(v.snippet.title);
         setRelated(rRes.data.items);
-      } catch (err) { console.error(err); }
-    };
-    const fetchComments = async () => {
+      } catch (e) { console.error(e); }
+    })();
+    (async () => {
       setCommentsLoading(true);
       try {
         const res = await getVideoComments(id);
@@ -82,23 +76,17 @@ export default function Watch() {
         setCommentsNextPage(res.data.nextPageToken || "");
       } catch { setYtComments([]); }
       setCommentsLoading(false);
-    };
-    fetchData();
-    fetchComments();
+    })();
   }, [id]);
 
-  // Mini player on scroll away
+  // Mini player when player scrolls out of view
   useEffect(() => {
-    if (!video) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting && video) {
-        setMini({ id, title: video.snippet.title });
-      } else {
-        setMini(null);
-      }
+    if (!video || !playerRef.current) return;
+    const obs = new IntersectionObserver(([e]) => {
+      setMini(e.isIntersecting ? null : { id, title: video.snippet.title });
     }, { threshold: 0.1 });
-    if (playerRef.current) obs.observe(playerRef.current);
-    return () => obs.disconnect();
+    obs.observe(playerRef.current);
+    return () => { obs.disconnect(); setMini(null); };
   }, [video, id, setMini]);
 
   const loadMoreComments = async () => {
@@ -114,154 +102,144 @@ export default function Watch() {
 
   const handleShare = () => {
     navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${id}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
 
   const handleSubscribe = () => {
     if (!user) return alert("Login karo!");
-    toggleSubscription({
-      id: video.snippet.channelId,
-      name: video.snippet.channelTitle,
-      avatar: `https://i.ytimg.com/vi/${id}/default.jpg`,
-    });
+    toggleSubscription({ id: video.snippet.channelId, name: video.snippet.channelTitle, avatar: video.snippet.thumbnails?.default?.url });
   };
 
   const handleWatchLater = () => {
     if (!user) return alert("Login karo!");
-    toggleWatchLater({
-      id, title: video.snippet.title,
-      thumb: video.snippet.thumbnails?.medium?.url,
-      channel: video.snippet.channelTitle,
-      duration: parseDuration(video.contentDetails?.duration),
-    });
+    toggleWatchLater({ id, title: video.snippet.title, thumb: video.snippet.thumbnails?.medium?.url, channel: video.snippet.channelTitle, duration: parseDuration(video.contentDetails?.duration) });
   };
 
   const handleLike = () => {
     if (!user) return alert("Login karo!");
-    toggleLiked({
-      id, title: video.snippet.title,
-      thumb: video.snippet.thumbnails?.medium?.url,
-      channel: video.snippet.channelTitle,
-      duration: parseDuration(video.contentDetails?.duration),
-    });
+    toggleLiked({ id, title: video.snippet.title, thumb: video.snippet.thumbnails?.medium?.url, channel: video.snippet.channelTitle, duration: parseDuration(video.contentDetails?.duration) });
   };
 
   const handleComment = (e) => {
     e.preventDefault();
-    if (!user) return alert("Login karo!");
-    if (!comment.trim()) return;
+    if (!user || !comment.trim()) return;
     setLocalComments([{ text: comment, user: user.name, pic: user.picture, id: Date.now() }, ...localComments]);
     setComment("");
   };
 
-  if (!video) return <p style={styles.msg}>Loading...</p>;
+  if (!video) return <div className="page-content"><p style={s.msg}>Loading...</p></div>;
   const { snippet, statistics } = video;
   const subscribed = isSubscribed(snippet.channelId);
   const wl = isWatchLater(id);
   const liked = isLiked(id);
 
   return (
-    <div className="watch-container">
-      <button onClick={() => navigate(-1)} style={styles.backBtn}>← Back</button>
-      <div className="watch-main">
-        <div style={styles.left}>
-          <div ref={playerRef}>
-            <iframe
-              style={styles.player}
-              src={`https://www.youtube.com/embed/${id}?autoplay=1`}
-              title={snippet.title}
-              allowFullScreen
-              allow="autoplay; encrypted-media"
-            />
-          </div>
-          <h2 style={styles.title}>{snippet.title}</h2>
+    <div className="page-content">
+      <div className="watch-container">
+        <div className="watch-main">
+          {/* Left: Player + Info + Comments */}
+          <div className="watch-left">
+            {/* Player */}
+            <div ref={playerRef}>
+              <iframe
+                className="watch-player"
+                src={`https://www.youtube.com/embed/${id}?autoplay=1&rel=0`}
+                title={snippet.title}
+                allowFullScreen
+                allow="autoplay; encrypted-media; picture-in-picture"
+              />
+            </div>
 
-          <div style={styles.actions}>
-            <span style={styles.views}>{Number(statistics?.viewCount).toLocaleString()} views</span>
-            <div style={styles.btns}>
-              {/* Like */}
-              <button onClick={handleLike} style={{ ...styles.btn, color: liked ? "#3ea6ff" : "#fff" }}>
-                {liked ? <AiFillLike size={20} /> : <AiOutlineLike size={20} />}
-                &nbsp;{Number(statistics?.likeCount).toLocaleString()}
-              </button>
-              {/* Watch Later */}
-              <button onClick={handleWatchLater} style={{ ...styles.btn, color: wl ? "#ffcc00" : "#fff" }} title={wl ? "Remove from Watch Later" : "Watch Later"}>
-                {wl ? <AiFillClockCircle size={20} /> : <AiOutlineClockCircle size={20} />}
-              </button>
-              {/* Share */}
-              <button onClick={handleShare} style={styles.btn} title="Share">
-                <MdShare size={20} />
-                &nbsp;{copied ? "Copied!" : "Share"}
-              </button>
-              {/* Subscribe */}
-              <button onClick={handleSubscribe} style={{ ...styles.subBtn, background: subscribed ? "#555" : "#ff0000" }}>
-                <MdOutlineSubscriptions size={16} />
-                &nbsp;{subscribed ? "Subscribed" : "Subscribe"}
-              </button>
+            {/* Title */}
+            <h2 style={s.title}>{snippet.title}</h2>
+
+            {/* Actions row */}
+            <div style={s.actions}>
+              <span style={s.views}>{Number(statistics?.viewCount || 0).toLocaleString()} views</span>
+              <div style={s.btns}>
+                <button onClick={handleLike} style={{ ...s.btn, color: liked ? "#3ea6ff" : "#fff" }}>
+                  {liked ? <AiFillLike size={20}/> : <AiOutlineLike size={20}/>}
+                  <span>{Number(statistics?.likeCount || 0).toLocaleString()}</span>
+                </button>
+                <button onClick={handleWatchLater} style={{ ...s.btn, color: wl ? "#ffcc00" : "#fff" }}>
+                  {wl ? <AiFillClockCircle size={20}/> : <AiOutlineClockCircle size={20}/>}
+                  <span style={s.btnLabel}>Later</span>
+                </button>
+                <button onClick={handleShare} style={s.btn}>
+                  <MdShare size={20}/>
+                  <span style={s.btnLabel}>{copied ? "Copied!" : "Share"}</span>
+                </button>
+                <button onClick={handleSubscribe} style={{ ...s.subBtn, background: subscribed ? "#555" : "#ff0000" }}>
+                  <MdOutlineSubscriptions size={16}/>
+                  <span>{subscribed ? "Subscribed" : "Subscribe"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Channel + Description */}
+            <div style={s.channelBox}>
+              <p style={s.channelName} onClick={() => navigate(`/channel/${snippet.channelId}`)}>
+                {snippet.channelTitle}
+              </p>
+              <Description text={snippet.description} videoId={id} />
+            </div>
+
+            {/* Comments */}
+            <div style={s.commentsWrap}>
+              <p style={s.commentsTitle}>
+                Comments {statistics?.commentCount ? `(${Number(statistics.commentCount).toLocaleString()})` : ""}
+              </p>
+              <form onSubmit={handleComment} style={s.commentForm}>
+                {user && <img src={user.picture} alt="" style={s.cAvatar}/>}
+                <input
+                  style={s.cInput}
+                  placeholder={user ? "Add a comment..." : "Login to comment..."}
+                  value={comment} onChange={(e) => setComment(e.target.value)} disabled={!user}
+                />
+                <button type="submit" style={s.cBtn} disabled={!user}>Post</button>
+              </form>
+
+              {localComments.map((c) => (
+                <div key={c.id} style={s.cItem}>
+                  <img src={c.pic} alt="" style={s.cAvatar}/>
+                  <div>
+                    <p style={s.cUser}>{c.user} <span style={s.youBadge}>You</span></p>
+                    <p style={s.cText}>{c.text}</p>
+                  </div>
+                </div>
+              ))}
+
+              {commentsLoading
+                ? <p style={s.loadMsg}>Loading comments...</p>
+                : ytComments.map((c) => {
+                    const top = c.snippet?.topLevelComment?.snippet;
+                    return (
+                      <div key={c.id} style={s.cItem}>
+                        <img src={top?.authorProfileImageUrl} alt="" style={s.cAvatar}/>
+                        <div>
+                          <p style={s.cUser}>
+                            {top?.authorDisplayName}
+                            <span style={s.likeCount}>👍 {top?.likeCount || 0}</span>
+                          </p>
+                          <p style={s.cText}>{top?.textDisplay}</p>
+                          {c.snippet?.totalReplyCount > 0 && <p style={s.replyCount}>{c.snippet.totalReplyCount} replies</p>}
+                        </div>
+                      </div>
+                    );
+                  })
+              }
+              {commentsNextPage && (
+                <button onClick={loadMoreComments} style={s.loadMoreBtn} disabled={loadingMore}>
+                  {loadingMore ? "Loading..." : "Load more comments"}
+                </button>
+              )}
             </div>
           </div>
 
-          <div style={styles.channelRow}>
-            <p style={styles.channelName} onClick={() => navigate(`/channel/${snippet.channelId}`)}>
-              {snippet.channelTitle}
-            </p>
-            <DescriptionWithTimestamps text={snippet.description} videoId={id} />
-          </div>
-
-          {/* Comments */}
-          <div style={styles.commentsSection}>
-            <p style={styles.commentsTitle}>
-              Comments {statistics?.commentCount ? `(${Number(statistics.commentCount).toLocaleString()})` : ""}
-            </p>
-            <form onSubmit={handleComment} style={styles.commentForm}>
-              {user && <img src={user.picture} alt="" style={styles.commentAvatar} />}
-              <input style={styles.commentInput} placeholder={user ? "Add a comment..." : "Login to comment..."} value={comment} onChange={(e) => setComment(e.target.value)} disabled={!user} />
-              <button type="submit" style={styles.commentBtn} disabled={!user}>Post</button>
-            </form>
-            {localComments.map((c) => (
-              <div key={c.id} style={styles.commentItem}>
-                <img src={c.pic} alt="" style={styles.commentAvatar} />
-                <div>
-                  <p style={styles.commentUser}>{c.user} <span style={styles.youBadge}>You</span></p>
-                  <p style={styles.commentText}>{c.text}</p>
-                </div>
-              </div>
-            ))}
-            {commentsLoading ? (
-              <p style={styles.loadingMsg}>Comments load ho rahe hain...</p>
-            ) : (
-              ytComments.map((c) => {
-                const top = c.snippet?.topLevelComment?.snippet;
-                return (
-                  <div key={c.id} style={styles.commentItem}>
-                    <img src={top?.authorProfileImageUrl} alt="" style={styles.commentAvatar} />
-                    <div>
-                      <p style={styles.commentUser}>
-                        {top?.authorDisplayName}
-                        <span style={styles.likeCount}>👍 {top?.likeCount || 0}</span>
-                      </p>
-                      <p style={styles.commentText}>{top?.textDisplay}</p>
-                      {c.snippet?.totalReplyCount > 0 && (
-                        <p style={styles.replyCount}>{c.snippet.totalReplyCount} replies</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            {commentsNextPage && (
-              <button onClick={loadMoreComments} style={styles.loadMoreBtn} disabled={loadingMore}>
-                {loadingMore ? "Loading..." : "Load more comments"}
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="watch-sidebar">
-          <p style={{ color: "#aaa", marginBottom: 10 }}>Related Videos</p>
-          <div className="video-grid" style={{ padding: 0 }}>
-            {related.map((v) => v.snippet && <VideoCard key={v.id?.videoId} video={v} />)}
+          {/* Right: Related Videos */}
+          <div className="watch-sidebar">
+            <p style={s.relatedTitle}>Up next</p>
+            {related.map((v) => v.snippet && <VideoCard key={v.id?.videoId} video={v}/>)}
           </div>
         </div>
       </div>
@@ -269,31 +247,30 @@ export default function Watch() {
   );
 }
 
-const styles = {
-  backBtn: { background: "none", border: "none", color: "#aaa", fontSize: 14, cursor: "pointer", marginBottom: 12, padding: 0 },
-  left: { flex: 1, minWidth: 0 },
-  player: { width: "100%", aspectRatio: "16/9", border: "none", borderRadius: 8 },
-  title: { marginTop: 12, fontSize: 18, fontWeight: "bold" },
-  actions: { display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0", borderBottom: "1px solid #333", paddingBottom: 10, flexWrap: "wrap", gap: 8 },
-  views: { color: "#aaa", fontSize: 13 },
-  btns: { display: "flex", gap: 8, flexWrap: "wrap" },
-  btn: { display: "flex", alignItems: "center", background: "#272727", border: "none", color: "#fff", padding: "7px 14px", borderRadius: 20, cursor: "pointer", fontSize: 13 },
-  subBtn: { display: "flex", alignItems: "center", border: "none", color: "#fff", padding: "7px 16px", borderRadius: 20, cursor: "pointer", fontSize: 13, fontWeight: "bold" },
-  channelRow: { margin: "10px 0", background: "#1a1a1a", borderRadius: 10, padding: 12 },
-  channelName: { fontWeight: "bold", fontSize: 15, cursor: "pointer", marginBottom: 6, color: "#fff" },
-  commentsSection: { marginTop: 20 },
-  commentsTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 12 },
-  commentForm: { display: "flex", alignItems: "center", gap: 10, marginBottom: 20 },
-  commentAvatar: { width: 32, height: 32, borderRadius: "50%", flexShrink: 0, objectFit: "cover" },
-  commentInput: { flex: 1, background: "transparent", border: "none", borderBottom: "1px solid #444", color: "#fff", fontSize: 13, padding: "6px 0", outline: "none" },
-  commentBtn: { background: "#3ea6ff", border: "none", color: "#000", padding: "6px 14px", borderRadius: 20, cursor: "pointer", fontWeight: "bold", fontSize: 12 },
-  commentItem: { display: "flex", gap: 10, marginBottom: 16 },
-  commentUser: { fontSize: 12, fontWeight: "bold", color: "#aaa", marginBottom: 2, display: "flex", alignItems: "center", gap: 6 },
-  commentText: { fontSize: 13, color: "#fff" },
-  youBadge: { fontSize: 10, background: "#3ea6ff", color: "#000", borderRadius: 4, padding: "1px 5px" },
-  likeCount: { fontSize: 11, color: "#aaa", fontWeight: "normal" },
-  replyCount: { fontSize: 12, color: "#3ea6ff", marginTop: 4 },
-  loadingMsg: { color: "#aaa", fontSize: 13, textAlign: "center", padding: "20px 0" },
-  loadMoreBtn: { display: "block", margin: "16px auto", background: "#272727", border: "none", color: "#3ea6ff", padding: "8px 20px", borderRadius: 20, cursor: "pointer", fontSize: 13 },
-  msg: { textAlign: "center", marginTop: 40, color: "#aaa" },
+const s = {
+  title:        { marginTop: 12, fontSize: 18, fontWeight: "bold", lineHeight: 1.4 },
+  actions:      { display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0", borderBottom: "1px solid #2a2a2a", paddingBottom: 12, flexWrap: "wrap", gap: 8 },
+  views:        { color: "#aaa", fontSize: 13 },
+  btns:         { display: "flex", gap: 8, flexWrap: "wrap" },
+  btn:          { display: "flex", alignItems: "center", gap: 6, background: "#272727", border: "none", color: "#fff", padding: "7px 14px", borderRadius: 20, cursor: "pointer", fontSize: 13 },
+  btnLabel:     { fontSize: 13 },
+  subBtn:       { display: "flex", alignItems: "center", gap: 6, border: "none", color: "#fff", padding: "7px 16px", borderRadius: 20, cursor: "pointer", fontSize: 13, fontWeight: "bold" },
+  channelBox:   { background: "#1a1a1a", borderRadius: 10, padding: "12px 14px", margin: "12px 0" },
+  channelName:  { fontWeight: "bold", fontSize: 15, cursor: "pointer", marginBottom: 6, color: "#fff" },
+  commentsWrap: { marginTop: 20 },
+  commentsTitle:{ fontSize: 16, fontWeight: "bold", marginBottom: 14 },
+  commentForm:  { display: "flex", alignItems: "center", gap: 10, marginBottom: 20 },
+  cAvatar:      { width: 32, height: 32, borderRadius: "50%", flexShrink: 0, objectFit: "cover" },
+  cInput:       { flex: 1, background: "transparent", border: "none", borderBottom: "1px solid #444", color: "#fff", fontSize: 13, padding: "6px 0", outline: "none" },
+  cBtn:         { background: "#3ea6ff", border: "none", color: "#000", padding: "6px 14px", borderRadius: 20, cursor: "pointer", fontWeight: "bold", fontSize: 12 },
+  cItem:        { display: "flex", gap: 10, marginBottom: 16 },
+  cUser:        { fontSize: 12, fontWeight: "bold", color: "#aaa", marginBottom: 2, display: "flex", alignItems: "center", gap: 6 },
+  cText:        { fontSize: 13, color: "#fff", lineHeight: 1.5 },
+  youBadge:     { fontSize: 10, background: "#3ea6ff", color: "#000", borderRadius: 4, padding: "1px 5px" },
+  likeCount:    { fontSize: 11, color: "#aaa", fontWeight: "normal" },
+  replyCount:   { fontSize: 12, color: "#3ea6ff", marginTop: 4 },
+  loadMsg:      { color: "#aaa", fontSize: 13, textAlign: "center", padding: "20px 0" },
+  loadMoreBtn:  { display: "block", margin: "16px auto", background: "#272727", border: "none", color: "#3ea6ff", padding: "8px 20px", borderRadius: 20, cursor: "pointer", fontSize: 13 },
+  relatedTitle: { color: "#aaa", fontSize: 14, fontWeight: "bold", marginBottom: 12 },
+  msg:          { textAlign: "center", marginTop: 60, color: "#aaa" },
 };

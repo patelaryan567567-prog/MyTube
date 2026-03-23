@@ -64,7 +64,7 @@ export default function Home() {
   }, [fetchVideos, videos]);
 
   return (
-    <div>
+    <div className="page-content">
       <CategoryBar onSelect={handleCategorySelect} />
       {loading ? (
         <p style={s.msg}>Loading...</p>

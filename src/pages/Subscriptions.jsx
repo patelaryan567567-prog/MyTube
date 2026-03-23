@@ -5,12 +5,9 @@ export default function Subscriptions() {
   const { user, subscriptions } = useAuth();
   const navigate = useNavigate();
 
-  if (!user) return (
-    <p style={styles.msg}>Login karo pehle subscriptions dekhne ke liye.</p>
-  );
-
+  if (!user) return <div className="page-content"><p style={styles.msg}>Login karo pehle subscriptions dekhne ke liye.</p></div>;
   return (
-    <div style={styles.wrap}>
+    <div className="page-content" style={styles.wrap}>
       <h2 style={styles.heading}>Subscriptions</h2>
       {subscriptions.length === 0 ? (
         <p style={styles.msg}>Koi subscription nahi hai abhi.</p>

@@ -5,10 +5,9 @@ export default function WatchLater() {
   const { user, watchLater, toggleWatchLater } = useAuth();
   const navigate = useNavigate();
 
-  if (!user) return <p style={s.msg}>Login karo pehle Watch Later dekhne ke liye.</p>;
-
+  if (!user) return <div className="page-content"><p style={s.msg}>Login karo pehle Watch Later dekhne ke liye.</p></div>;
   return (
-    <div style={s.wrap}>
+    <div className="page-content" style={s.wrap}>
       <h2 style={s.heading}>Watch Later ({watchLater.length})</h2>
       {watchLater.length === 0 ? (
         <p style={s.msg}>Koi video save nahi ki abhi.</p>

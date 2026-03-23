@@ -130,8 +130,8 @@ export default function Channel() {
     return () => observerRef.current?.disconnect();
   }, [fetchTabData, activeTab]);
 
-  if (loading) return <p style={styles.msg}>Loading...</p>;
-  if (!channel) return <p style={styles.msg}>Channel not found</p>;
+  if (loading) return <div className="page-content"><p style={styles.msg}>Loading...</p></div>;
+  if (!channel) return <div className="page-content"><p style={styles.msg}>Channel not found</p></div>;
 
   const { snippet, statistics } = channel;
   const bannerUrl = channel.brandingSettings?.image?.bannerExternalUrl;
@@ -186,7 +186,7 @@ export default function Channel() {
   };
 
   return (
-    <div>
+    <div className="page-content">
       <button onClick={() => navigate(-1)} style={styles.backBtn}>← Back</button>
 
       <div style={styles.bannerWrap}>

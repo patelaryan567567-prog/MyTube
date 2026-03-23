@@ -53,7 +53,7 @@ export default function Trending() {
   }, [fetchVideos, videos]);
 
   return (
-    <div>
+    <div className="page-content">
       <div style={s.header}>
         <h2 style={s.heading}>🔥 Trending</h2>
         <div style={s.countryBar}>

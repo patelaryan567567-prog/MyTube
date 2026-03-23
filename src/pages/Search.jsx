@@ -56,10 +56,10 @@ export default function Search() {
     return () => observerRef.current?.disconnect();
   }, [fetchVideos, videos]);
 
-  if (loading) return <p style={styles.msg}>Searching...</p>;
+  if (loading) return <div className="page-content"><p style={styles.msg}>Searching...</p></div>;
 
   return (
-    <div style={styles.container}>
+    <div className="page-content" style={styles.container}>
       <p style={styles.heading}>
         Results for: <span style={{ color: "#fff" }}>{query}</span>
       </p>

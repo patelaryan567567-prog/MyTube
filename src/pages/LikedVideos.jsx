@@ -5,10 +5,9 @@ export default function LikedVideos() {
   const { user, likedVideos, toggleLiked } = useAuth();
   const navigate = useNavigate();
 
-  if (!user) return <p style={s.msg}>Login karo pehle liked videos dekhne ke liye.</p>;
-
+  if (!user) return <div className="page-content"><p style={s.msg}>Login karo pehle liked videos dekhne ke liye.</p></div>;
   return (
-    <div style={s.wrap}>
+    <div className="page-content" style={s.wrap}>
       <h2 style={s.heading}>Liked Videos ({likedVideos.length})</h2>
       {likedVideos.length === 0 ? (
         <p style={s.msg}>Koi video like nahi ki abhi.</p>
