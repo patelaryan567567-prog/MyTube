@@ -14,6 +14,8 @@ export default function Search() {
   const [nextPageToken, setNextPageToken] = useState("");
   const observerRef = useRef(null);
   const bottomRef = useRef(null);
+  const nextTokenRef = useRef("");
+  const loadingRef = useRef(false);
 
   const fetchVideos = useCallback(async (pageToken = "", reset = false) => {
     if (reset) setLoading(true); else setLoadingMore(true);
@@ -26,28 +28,31 @@ export default function Search() {
       } else {
         setVideos((prev) => [...prev, ...items.filter((i) => i.id?.kind === "youtube#video")]);
       }
-      setNextPageToken(res.data.nextPageToken || "");
-    } catch (err) {
-      console.error(err);
-    }
-    if (reset) setLoading(false); else setLoadingMore(false);
+      const token = res.data.nextPageToken || "";
+      setNextPageToken(token);
+      nextTokenRef.current = token;
+    } catch (err) { console.error(err); }
+    if (reset) setLoading(false);
+    else { setLoadingMore(false); loadingRef.current = false; }
   }, [query]);
 
   useEffect(() => {
+    nextTokenRef.current = "";
+    loadingRef.current = false;
     if (query) fetchVideos("", true);
   }, [query]);
 
-  // Infinite scroll observer
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
     observerRef.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && nextPageToken && !loadingMore) {
-        fetchVideos(nextPageToken);
+      if (entries[0].isIntersecting && nextTokenRef.current && !loadingRef.current) {
+        loadingRef.current = true;
+        fetchVideos(nextTokenRef.current);
       }
     });
     if (bottomRef.current) observerRef.current.observe(bottomRef.current);
     return () => observerRef.current?.disconnect();
-  }, [nextPageToken, loadingMore, fetchVideos]);
+  }, [fetchVideos]);
 
   if (loading) return <p style={styles.msg}>Searching...</p>;
 
@@ -56,17 +61,14 @@ export default function Search() {
       <p style={styles.heading}>
         Results for: <span style={{ color: "#fff" }}>{query}</span>
       </p>
-
       {channels.length > 0 && (
         <div style={styles.section}>
           {channels.map((c) => <ChannelCard key={c.id?.channelId} channel={c} />)}
         </div>
       )}
-
-      <div style={styles.grid}>
+      <div className="video-grid">
         {videos.map((v, i) => <VideoCard key={`${v.id?.videoId}-${i}`} video={v} />)}
       </div>
-
       <div ref={bottomRef} style={styles.bottom}>
         {loadingMore && <p style={styles.msg}>Loading more...</p>}
       </div>
@@ -75,10 +77,9 @@ export default function Search() {
 }
 
 const styles = {
-  container: { padding: 20 },
+  container: { padding: 16 },
   heading: { color: "#aaa", marginBottom: 16, fontSize: 15 },
   section: { marginBottom: 20 },
-  grid: { display: "flex", flexWrap: "wrap", gap: 16 },
   bottom: { marginTop: 20, textAlign: "center" },
   msg: { color: "#aaa", textAlign: "center", marginTop: 40 },
 };

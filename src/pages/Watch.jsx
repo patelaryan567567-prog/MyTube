@@ -18,9 +18,7 @@ export default function Watch() {
   const [comments, setComments] = useState([]);
 
   useEffect(() => {
-    setLiked(false);
-    setSubscribed(false);
-    setComments([]);
+    setLiked(false); setSubscribed(false); setComments([]);
     const fetch = async () => {
       try {
         const vRes = await getVideoById(id);
@@ -28,39 +26,28 @@ export default function Watch() {
         setVideo(videoData);
         const rRes = await getRelatedVideos(videoData.snippet.title);
         setRelated(rRes.data.items);
-      } catch (err) {
-        console.error(err);
-      }
+      } catch (err) { console.error(err); }
     };
     fetch();
   }, [id]);
 
-  const handleLike = () => {
-    if (!user) return alert("Like karne ke liye login karo!");
-    setLiked(!liked);
-  };
-
-  const handleSubscribe = () => {
-    if (!user) return alert("Subscribe karne ke liye login karo!");
-    setSubscribed(!subscribed);
-  };
-
+  const handleLike = () => { if (!user) return alert("Login karo!"); setLiked(!liked); };
+  const handleSubscribe = () => { if (!user) return alert("Login karo!"); setSubscribed(!subscribed); };
   const handleComment = (e) => {
     e.preventDefault();
-    if (!user) return alert("Comment karne ke liye login karo!");
+    if (!user) return alert("Login karo!");
     if (!comment.trim()) return;
     setComments([{ text: comment, user: user.name, pic: user.picture, id: Date.now() }, ...comments]);
     setComment("");
   };
 
   if (!video) return <p style={styles.msg}>Loading...</p>;
-
   const { snippet, statistics } = video;
 
   return (
-    <div style={styles.container}>
+    <div className="watch-container">
       <button onClick={() => navigate(-1)} style={styles.backBtn}>← Back</button>
-      <div style={styles.main}>
+      <div className="watch-main">
         <div style={styles.left}>
           <iframe
             style={styles.player}
@@ -91,13 +78,7 @@ export default function Watch() {
             <p style={styles.commentsTitle}>Comments</p>
             <form onSubmit={handleComment} style={styles.commentForm}>
               {user && <img src={user.picture} alt="" style={styles.commentAvatar} />}
-              <input
-                style={styles.commentInput}
-                placeholder={user ? "Add a comment..." : "Login to comment..."}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                disabled={!user}
-              />
+              <input style={styles.commentInput} placeholder={user ? "Add a comment..." : "Login to comment..."} value={comment} onChange={(e) => setComment(e.target.value)} disabled={!user} />
               <button type="submit" style={styles.commentBtn} disabled={!user}>Post</button>
             </form>
             {comments.map((c) => (
@@ -111,9 +92,11 @@ export default function Watch() {
             ))}
           </div>
         </div>
-        <div style={styles.sidebar}>
+        <div className="watch-sidebar">
           <p style={{ color: "#aaa", marginBottom: 10 }}>Related Videos</p>
-          {related.map((v) => v.snippet && <VideoCard key={v.id?.videoId} video={v} />)}
+          <div className="video-grid" style={{ padding: 0 }}>
+            {related.map((v) => v.snippet && <VideoCard key={v.id?.videoId} video={v} />)}
+          </div>
         </div>
       </div>
     </div>
@@ -121,13 +104,11 @@ export default function Watch() {
 }
 
 const styles = {
-  container: { padding: 20 },
   backBtn: { background: "none", border: "none", color: "#aaa", fontSize: 14, cursor: "pointer", marginBottom: 12, padding: 0 },
-  main: { display: "flex", gap: 20 },
-  left: { flex: 1 },
-  player: { width: "100%", height: 480, border: "none", borderRadius: 8 },
+  left: { flex: 1, minWidth: 0 },
+  player: { width: "100%", aspectRatio: "16/9", border: "none", borderRadius: 8 },
   title: { marginTop: 12, fontSize: 18, fontWeight: "bold" },
-  actions: { display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0", borderBottom: "1px solid #333", paddingBottom: 10 },
+  actions: { display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0", borderBottom: "1px solid #333", paddingBottom: 10, flexWrap: "wrap", gap: 8 },
   views: { color: "#aaa", fontSize: 13 },
   btns: { display: "flex", gap: 10 },
   btn: { display: "flex", alignItems: "center", background: "#272727", border: "none", color: "#fff", padding: "7px 14px", borderRadius: 20, cursor: "pointer", fontSize: 13 },
@@ -138,12 +119,11 @@ const styles = {
   commentsSection: { marginTop: 20 },
   commentsTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 12 },
   commentForm: { display: "flex", alignItems: "center", gap: 10, marginBottom: 20 },
-  commentAvatar: { width: 32, height: 32, borderRadius: "50%" },
+  commentAvatar: { width: 32, height: 32, borderRadius: "50%", flexShrink: 0 },
   commentInput: { flex: 1, background: "transparent", border: "none", borderBottom: "1px solid #444", color: "#fff", fontSize: 13, padding: "6px 0", outline: "none" },
   commentBtn: { background: "#3ea6ff", border: "none", color: "#000", padding: "6px 14px", borderRadius: 20, cursor: "pointer", fontWeight: "bold", fontSize: 12 },
   commentItem: { display: "flex", gap: 10, marginBottom: 16 },
   commentUser: { fontSize: 12, fontWeight: "bold", color: "#aaa", marginBottom: 2 },
   commentText: { fontSize: 13, color: "#fff" },
-  sidebar: { width: 300, display: "flex", flexDirection: "column", gap: 12 },
   msg: { textAlign: "center", marginTop: 40, color: "#aaa" },
 };

@@ -10,13 +10,9 @@ export default function Home() {
   const fetchVideos = async (categoryId = "0") => {
     setLoading(true);
     try {
-      const res = categoryId === "0"
-        ? await getTrending()
-        : await getVideosByCategory(categoryId);
+      const res = categoryId === "0" ? await getTrending() : await getVideosByCategory(categoryId);
       setVideos(res.data.items);
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
     setLoading(false);
   };
 
@@ -28,7 +24,7 @@ export default function Home() {
       {loading ? (
         <p style={styles.msg}>Loading...</p>
       ) : (
-        <div style={styles.grid}>
+        <div className="video-grid">
           {videos.map((v) => <VideoCard key={v.id} video={v} />)}
         </div>
       )}
@@ -37,15 +33,5 @@ export default function Home() {
 }
 
 const styles = {
-  grid: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 16,
-    padding: 20,
-  },
-  msg: {
-    textAlign: "center",
-    marginTop: 40,
-    color: "#aaa",
-  },
+  msg: { textAlign: "center", marginTop: 40, color: "#aaa" },
 };

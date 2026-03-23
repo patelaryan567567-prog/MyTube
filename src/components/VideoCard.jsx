@@ -34,9 +34,9 @@ export default function VideoCard({ video }) {
 }
 
 const styles = {
-  card: { cursor: "pointer", width: 280, minWidth: 280, flexShrink: 0, background: "transparent" },
+  card: { cursor: "pointer", width: "100%", minWidth: 0, flexShrink: 0, background: "transparent" },
   thumbWrap: { borderRadius: 8, overflow: "hidden" },
-  thumbnail: { width: "100%", height: 158, objectFit: "cover", display: "block" },
+  thumbnail: { width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" },
   info: { padding: "8px 4px" },
   title: { fontSize: 14, fontWeight: "600", marginBottom: 4, color: "#fff", lineHeight: 1.4 },
   channel: { fontSize: 13, color: "#aaa", marginBottom: 2, cursor: "pointer" },
