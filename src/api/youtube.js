@@ -12,7 +12,12 @@ export const getTrending = () =>
 
 export const searchVideos = (query) =>
   api.get("/search", {
-    params: { part: "snippet", q: query, maxResults: 20, type: "video", key: API_KEY },
+    params: { part: "snippet", q: query, maxResults: 20, key: API_KEY },
+  });
+
+export const getChannelVideos = (channelId) =>
+  api.get("/search", {
+    params: { part: "snippet", channelId, type: "video", maxResults: 20, order: "date", key: API_KEY },
   });
 
 export const getVideoById = (id) =>

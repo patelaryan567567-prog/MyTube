@@ -7,15 +7,24 @@ export default function VideoCard({ video }) {
   const snippet = video.snippet;
 
   return (
-    <div style={styles.card} onClick={() => navigate(`/watch/${id}`)}>
-      <img
-        src={snippet.thumbnails?.medium?.url}
-        alt={snippet.title}
-        style={styles.thumbnail}
-      />
+    <div style={styles.card}>
+      <div style={styles.thumbWrap} onClick={() => navigate(`/watch/${id}`)}>
+        <img
+          src={snippet.thumbnails?.medium?.url}
+          alt={snippet.title}
+          style={styles.thumbnail}
+        />
+        </div>
       <div style={styles.info}>
-        <p style={styles.title}>{snippet.title?.slice(0, 60)}...</p>
-        <p style={styles.channel}>{snippet.channelTitle}</p>
+        <p style={styles.title} onClick={() => navigate(`/watch/${id}`)}>
+          {snippet.title?.slice(0, 65)}{snippet.title?.length > 65 ? "..." : ""}
+        </p>
+        <p
+          style={styles.channel}
+          onClick={() => navigate(`/channel/${snippet.channelId}`)}
+        >
+          {snippet.channelTitle}
+        </p>
         {video.statistics && (
           <p style={styles.views}>
             {Number(video.statistics.viewCount).toLocaleString()} views
@@ -30,32 +39,38 @@ const styles = {
   card: {
     cursor: "pointer",
     width: 280,
-    background: "#181818",
+    background: "transparent",
+  },
+  thumbWrap: {
     borderRadius: 8,
     overflow: "hidden",
-    transition: "transform 0.2s",
   },
   thumbnail: {
     width: "100%",
     height: 158,
     objectFit: "cover",
+    display: "block",
+    transition: "transform 0.2s",
   },
   info: {
-    padding: "8px 10px",
+    padding: "8px 4px",
   },
   title: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
     marginBottom: 4,
     color: "#fff",
+    lineHeight: 1.4,
   },
   channel: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#aaa",
     marginBottom: 2,
+    cursor: "pointer",
+    ":hover": { color: "#fff" },
   },
   views: {
-    fontSize: 11,
-    color: "#888",
+    fontSize: 12,
+    color: "#aaa",
   },
 };
