@@ -103,48 +103,43 @@ a { text-decoration: none; color: inherit; }
 /* ── Theme Toggle Button ── */
 .theme-toggle {
   position: relative;
-  width: 52px; height: 28px;
+  width: 56px; height: 30px;
   border-radius: 50px;
   border: none;
   cursor: pointer;
   padding: 0;
-  transition: background 0.4s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
   flex-shrink: 0;
+  transition: background 0.45s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s;
 }
-.theme-toggle.dark  { background: linear-gradient(135deg, #1a1a2e, #16213e); }
-.theme-toggle.light { background: linear-gradient(135deg, #87ceeb, #ffd700); }
+.theme-toggle.dark {
+  background: linear-gradient(135deg, #0d1b3e 0%, #1a237e 100%);
+  box-shadow: 0 0 10px rgba(100,120,255,0.4);
+}
+.theme-toggle.light {
+  background: linear-gradient(135deg, #74c0fc 0%, #ffe066 100%);
+  box-shadow: 0 0 10px rgba(255,200,0,0.35);
+}
+.theme-toggle:hover { filter: brightness(1.15); }
 
 .theme-toggle .knob {
   position: absolute;
   top: 3px; left: 3px;
-  width: 22px; height: 22px;
+  width: 24px; height: 24px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px;
-  transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), background 0.4s;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.45s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s;
+  z-index: 2;
 }
-.theme-toggle.dark  .knob { transform: translateX(0px);  background: #f0e68c; }
-.theme-toggle.light .knob { transform: translateX(24px); background: #fff8dc; }
-
-/* Stars (dark mode) */
-.theme-toggle .stars {
-  position: absolute; right: 5px; top: 50%;
-  transform: translateY(-50%);
-  display: flex; flex-direction: column; gap: 2px;
-  transition: opacity 0.3s;
+.theme-toggle.dark  .knob {
+  transform: translateX(0px);
+  background: radial-gradient(circle at 35% 35%, #fffde7, #f9a825);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 -2px 4px rgba(0,0,0,0.15);
 }
-.theme-toggle.light .stars { opacity: 0; }
-.theme-toggle.dark  .stars { opacity: 1; }
-.theme-toggle .star { width: 3px; height: 3px; background: #fff; border-radius: 50%; }
-
-/* Rays (light mode) */
-.theme-toggle .rays {
-  position: absolute; left: 5px; top: 50%;
-  transform: translateY(-50%);
-  display: flex; flex-direction: column; gap: 2px;
-  transition: opacity 0.3s;
+.theme-toggle.light .knob {
+  transform: translateX(26px);
+  background: radial-gradient(circle at 35% 35%, #ffffff, #ffe082);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25), inset 0 -2px 4px rgba(200,150,0,0.2);
 }
-.theme-toggle.dark  .rays { opacity: 0; }
-.theme-toggle.light .rays { opacity: 1; }
-.theme-toggle .ray { width: 3px; height: 3px; background: #ff8c00; border-radius: 50%; }

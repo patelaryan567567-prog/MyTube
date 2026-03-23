@@ -200,11 +200,9 @@ export default function Navbar() {
               <AiOutlineSearch size={22} color="var(--text)" />
             </button>
           )}
-          {/* ── Premium Theme Toggle ── */}
+          {/* ── Theme Toggle ── */}
           <button className={`theme-toggle ${dark ? "dark" : "light"}`} onClick={toggleTheme} title={dark ? "Switch to Light" : "Switch to Dark"}>
             <div className="knob">{dark ? "🌙" : "☀️"}</div>
-            <div className="stars"><div className="star"/><div className="star"/><div className="star"/></div>
-            <div className="rays"><div className="ray"/><div className="ray"/><div className="ray"/></div>
           </button>
           {user ? (
             <div style={{ position: "relative" }} ref={menuRef}>
