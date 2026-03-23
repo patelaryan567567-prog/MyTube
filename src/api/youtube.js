@@ -3,9 +3,9 @@ import axios from "axios";
 const BASE_URL = "https://www.googleapis.com/youtube/v3";
 const api = axios.create({ baseURL: BASE_URL });
 
-const HOME_KEYS   = [import.meta.env.VITE_API_HOME,  import.meta.env.VITE_API_EXTRA];
-const SEARCH_KEYS = [import.meta.env.VITE_API_SEARCH, import.meta.env.VITE_API_EXTRA];
-const VIDEO_KEYS  = [import.meta.env.VITE_API_VIDEO,  import.meta.env.VITE_API_EXTRA];
+const HOME_KEYS   = [import.meta.env.VITE_API_HOME,   import.meta.env.VITE_API_EXTRA, import.meta.env.VITE_API_EXTRA2];
+const SEARCH_KEYS = [import.meta.env.VITE_API_SEARCH, import.meta.env.VITE_API_EXTRA, import.meta.env.VITE_API_EXTRA2];
+const VIDEO_KEYS  = [import.meta.env.VITE_API_VIDEO,  import.meta.env.VITE_API_EXTRA, import.meta.env.VITE_API_EXTRA2];
 
 const cache = {};
 const smartGet = async (url, params, keys) => {
