@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AiOutlineSearch } from "react-icons/ai";
-import { RiYoutubeLine } from "react-icons/ri";
+import { RiYoutubeLine, RiUserLine } from "react-icons/ri";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { useAuth } from "../context/AuthContext";
@@ -21,13 +21,23 @@ export default function Navbar() {
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await getSearchSuggestions(query);
-        setSuggestions(res.data.items.map((i) => i.snippet.title));
+        setSuggestions(res.data.items.map((i) => ({
+          title: i.snippet.title,
+          type: i.id?.kind === "youtube#channel" ? "channel" : "video",
+          id: i.id?.channelId || i.id?.videoId,
+          thumb: i.snippet.thumbnails?.default?.url,
+        })));
       } catch { setSuggestions([]); }
     }, 400);
   }, [query]);
 
-  const handleSearch = (q) => {
-    const searchQuery = q || query;
+  const handleSearch = (sugg) => {
+    if (sugg?.type === "channel") {
+      setShowSugg(false);
+      navigate(`/channel/${sugg.id}`);
+      return;
+    }
+    const searchQuery = sugg?.title || query;
     if (!searchQuery.trim()) return;
     setShowSugg(false);
     setQuery(searchQuery);
@@ -61,8 +71,15 @@ export default function Navbar() {
           <div style={styles.dropdown}>
             {suggestions.map((s, i) => (
               <div key={i} style={styles.suggItem} onMouseDown={() => handleSearch(s)}>
-                <AiOutlineSearch size={14} color="#aaa" />
-                <span style={styles.suggText}>{s.slice(0, 60)}</span>
+                {s.type === "channel" ? (
+                  <img src={s.thumb} alt="" style={styles.suggThumb} />
+                ) : (
+                  <AiOutlineSearch size={14} color="#aaa" />
+                )}
+                <span style={styles.suggText}>{s.title?.slice(0, 60)}</span>
+                {s.type === "channel" && (
+                  <span style={styles.channelBadge}>Channel</span>
+                )}
               </div>
             ))}
           </div>
@@ -144,7 +161,9 @@ const styles = {
     transition: "background 0.15s",
     ":hover": { background: "#333" },
   },
-  suggText: { fontSize: 13, color: "#fff" },
+  suggText: { fontSize: 13, color: "#fff", flex: 1 },
+  suggThumb: { width: 24, height: 24, borderRadius: "50%", objectFit: "cover" },
+  channelBadge: { fontSize: 10, color: "#3ea6ff", border: "1px solid #3ea6ff", borderRadius: 4, padding: "1px 5px" },
   authSection: { display: "flex", alignItems: "center" },
   userInfo: { display: "flex", alignItems: "center", gap: 8 },
   avatar: { width: 32, height: 32, borderRadius: "50%" },
