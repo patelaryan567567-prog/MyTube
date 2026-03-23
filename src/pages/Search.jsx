@@ -44,16 +44,17 @@ export default function Search() {
   }, [query]);
 
   useEffect(() => {
+    if (!bottomRef.current) return;
     if (observerRef.current) observerRef.current.disconnect();
     observerRef.current = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && nextTokenRef.current && !loadingRef.current) {
         loadingRef.current = true;
         fetchVideos(nextTokenRef.current);
       }
-    });
-    if (bottomRef.current) observerRef.current.observe(bottomRef.current);
+    }, { rootMargin: "200px" });
+    observerRef.current.observe(bottomRef.current);
     return () => observerRef.current?.disconnect();
-  }, [fetchVideos]);
+  }, [fetchVideos, videos]);
 
   if (loading) return <p style={styles.msg}>Searching...</p>;
 
