@@ -13,6 +13,7 @@ const ALL_KEYS = [
   import.meta.env.VITE_API_EXTRA4,
   import.meta.env.VITE_API_EXTRA5,
   import.meta.env.VITE_API_EXTRA6,
+  import.meta.env.VITE_API_EXTRA7,
 ].filter(Boolean);
 
 const HOME_KEYS   = [import.meta.env.VITE_API_HOME,   ...ALL_KEYS.filter(k => k !== import.meta.env.VITE_API_HOME)];
