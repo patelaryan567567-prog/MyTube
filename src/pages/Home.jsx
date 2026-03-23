@@ -104,9 +104,9 @@ const s = {
   msg: { textAlign: "center", marginTop: 40, color: "#aaa" },
   bottom: { marginTop: 20, textAlign: "center" },
   shortsWrap: { padding: "12px 20px 0" },
-  shortsTitle: { fontSize: 16, fontWeight: "bold", color: "#fff", marginBottom: 10 },
+  shortsTitle: { fontSize: 16, fontWeight: "bold", color: "var(--text)", marginBottom: 10 },
   shortsRow: { display: "flex", gap: 10, overflowX: "auto", paddingBottom: 12, scrollbarWidth: "thin" },
   shortCard: { flexShrink: 0, width: 120, cursor: "pointer" },
   shortThumb: { width: 120, height: 200, objectFit: "cover", borderRadius: 10, display: "block" },
-  shortTitle: { fontSize: 11, color: "#ccc", marginTop: 4, lineHeight: 1.3 },
+  shortTitle: { fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.3 },
 };

@@ -48,8 +48,8 @@ const styles = {
     fontSize: 11, fontWeight: "bold", padding: "2px 5px", borderRadius: 4,
   },
   info: { padding: "8px 4px" },
-  title: { fontSize: 14, fontWeight: "600", marginBottom: 4, color: "#fff", lineHeight: 1.4 },
-  channel: { fontSize: 13, color: "#aaa", marginBottom: 2, cursor: "pointer" },
-  views: { fontSize: 12, color: "#aaa" },
+  title: { fontSize: 14, fontWeight: "600", marginBottom: 4, color: "var(--text)", lineHeight: 1.4 },
+  channel: { fontSize: 13, color: "var(--text-muted)", marginBottom: 2, cursor: "pointer" },
+  views: { fontSize: 12, color: "var(--text-muted)" },
   liveBadge: { display: "inline-block", background: "#ff0000", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "2px 6px", borderRadius: 4, marginBottom: 4 },
 };

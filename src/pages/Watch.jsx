@@ -35,7 +35,7 @@ function Description({ text, videoId }) {
 }
 const ds = {
   wrap: { marginTop: 6 },
-  text: { fontSize: 13, color: "#ccc", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" },
+  text: { fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" },
   ts:   { color: "#3ea6ff", textDecoration: "none", fontWeight: "bold" },
   more: { color: "#3ea6ff", cursor: "pointer", fontWeight: "bold" },
 };
@@ -157,11 +157,11 @@ export default function Watch() {
             <div style={s.actions}>
               <span style={s.views}>{Number(statistics?.viewCount || 0).toLocaleString()} views</span>
               <div style={s.btns}>
-                <button onClick={handleLike} style={{ ...s.btn, color: liked ? "#3ea6ff" : "#fff" }}>
+                <button onClick={handleLike} style={{ ...s.btn, color: liked ? "#3ea6ff" : "var(--text)" }}>
                   {liked ? <AiFillLike size={20}/> : <AiOutlineLike size={20}/>}
                   <span>{Number(statistics?.likeCount || 0).toLocaleString()}</span>
                 </button>
-                <button onClick={handleWatchLater} style={{ ...s.btn, color: wl ? "#ffcc00" : "#fff" }}>
+                <button onClick={handleWatchLater} style={{ ...s.btn, color: wl ? "#ffcc00" : "var(--text)" }}>
                   {wl ? <AiFillClockCircle size={20}/> : <AiOutlineClockCircle size={20}/>}
                   <span style={s.btnLabel}>Later</span>
                 </button>
@@ -248,29 +248,29 @@ export default function Watch() {
 }
 
 const s = {
-  title:        { marginTop: 12, fontSize: 18, fontWeight: "bold", lineHeight: 1.4 },
-  actions:      { display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0", borderBottom: "1px solid #2a2a2a", paddingBottom: 12, flexWrap: "wrap", gap: 8 },
-  views:        { color: "#aaa", fontSize: 13 },
+  title:        { marginTop: 12, fontSize: 18, fontWeight: "bold", lineHeight: 1.4, color: "var(--text)" },
+  actions:      { display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0", borderBottom: "1px solid var(--border)", paddingBottom: 12, flexWrap: "wrap", gap: 8 },
+  views:        { color: "var(--text-muted)", fontSize: 13 },
   btns:         { display: "flex", gap: 8, flexWrap: "wrap" },
-  btn:          { display: "flex", alignItems: "center", gap: 6, background: "#272727", border: "none", color: "#fff", padding: "7px 14px", borderRadius: 20, cursor: "pointer", fontSize: 13 },
+  btn:          { display: "flex", alignItems: "center", gap: 6, background: "var(--hover-bg)", border: "none", color: "var(--text)", padding: "7px 14px", borderRadius: 20, cursor: "pointer", fontSize: 13 },
   btnLabel:     { fontSize: 13 },
   subBtn:       { display: "flex", alignItems: "center", gap: 6, border: "none", color: "#fff", padding: "7px 16px", borderRadius: 20, cursor: "pointer", fontSize: 13, fontWeight: "bold" },
-  channelBox:   { background: "#1a1a1a", borderRadius: 10, padding: "12px 14px", margin: "12px 0" },
-  channelName:  { fontWeight: "bold", fontSize: 15, cursor: "pointer", marginBottom: 6, color: "#fff" },
+  channelBox:   { background: "var(--card-bg)", borderRadius: 10, padding: "12px 14px", margin: "12px 0", border: "1px solid var(--border)" },
+  channelName:  { fontWeight: "bold", fontSize: 15, cursor: "pointer", marginBottom: 6, color: "var(--text)" },
   commentsWrap: { marginTop: 20 },
-  commentsTitle:{ fontSize: 16, fontWeight: "bold", marginBottom: 14 },
+  commentsTitle:{ fontSize: 16, fontWeight: "bold", marginBottom: 14, color: "var(--text)" },
   commentForm:  { display: "flex", alignItems: "center", gap: 10, marginBottom: 20 },
   cAvatar:      { width: 32, height: 32, borderRadius: "50%", flexShrink: 0, objectFit: "cover" },
-  cInput:       { flex: 1, background: "transparent", border: "none", borderBottom: "1px solid #444", color: "#fff", fontSize: 13, padding: "6px 0", outline: "none" },
+  cInput:       { flex: 1, background: "transparent", border: "none", borderBottom: "1px solid var(--border)", color: "var(--text)", fontSize: 13, padding: "6px 0", outline: "none" },
   cBtn:         { background: "#3ea6ff", border: "none", color: "#000", padding: "6px 14px", borderRadius: 20, cursor: "pointer", fontWeight: "bold", fontSize: 12 },
   cItem:        { display: "flex", gap: 10, marginBottom: 16 },
-  cUser:        { fontSize: 12, fontWeight: "bold", color: "#aaa", marginBottom: 2, display: "flex", alignItems: "center", gap: 6 },
-  cText:        { fontSize: 13, color: "#fff", lineHeight: 1.5 },
+  cUser:        { fontSize: 12, fontWeight: "bold", color: "var(--text-muted)", marginBottom: 2, display: "flex", alignItems: "center", gap: 6 },
+  cText:        { fontSize: 13, color: "var(--text)", lineHeight: 1.5 },
   youBadge:     { fontSize: 10, background: "#3ea6ff", color: "#000", borderRadius: 4, padding: "1px 5px" },
-  likeCount:    { fontSize: 11, color: "#aaa", fontWeight: "normal" },
+  likeCount:    { fontSize: 11, color: "var(--text-muted)", fontWeight: "normal" },
   replyCount:   { fontSize: 12, color: "#3ea6ff", marginTop: 4 },
-  loadMsg:      { color: "#aaa", fontSize: 13, textAlign: "center", padding: "20px 0" },
-  loadMoreBtn:  { display: "block", margin: "16px auto", background: "#272727", border: "none", color: "#3ea6ff", padding: "8px 20px", borderRadius: 20, cursor: "pointer", fontSize: 13 },
-  relatedTitle: { color: "#aaa", fontSize: 14, fontWeight: "bold", marginBottom: 12 },
-  msg:          { textAlign: "center", marginTop: 60, color: "#aaa" },
+  loadMsg:      { color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "20px 0" },
+  loadMoreBtn:  { display: "block", margin: "16px auto", background: "var(--hover-bg)", border: "none", color: "#3ea6ff", padding: "8px 20px", borderRadius: 20, cursor: "pointer", fontSize: 13 },
+  relatedTitle: { color: "var(--text-muted)", fontSize: 14, fontWeight: "bold", marginBottom: 12 },
+  msg:          { textAlign: "center", marginTop: 60, color: "var(--text-muted)" },
 };

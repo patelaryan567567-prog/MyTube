@@ -34,15 +34,15 @@ export default function WatchLater() {
 
 const s = {
   wrap: { padding: "24px 20px" },
-  heading: { fontSize: 20, fontWeight: "bold", marginBottom: 20, color: "#fff" },
+  heading: { fontSize: 20, fontWeight: "bold", marginBottom: 20, color: "var(--text)" },
   list: { display: "flex", flexDirection: "column", gap: 12 },
-  item: { display: "flex", gap: 12, alignItems: "center", background: "#1a1a1a", borderRadius: 10, padding: 10 },
+  item: { display: "flex", gap: 12, alignItems: "center", background: "var(--card-bg)", borderRadius: 10, padding: 10, border: "1px solid var(--border)" },
   thumbWrap: { position: "relative", flexShrink: 0, cursor: "pointer" },
   thumb: { width: 160, height: 90, objectFit: "cover", borderRadius: 8, display: "block" },
   dur: { position: "absolute", bottom: 4, right: 4, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "2px 5px", borderRadius: 4 },
   info: { flex: 1, minWidth: 0 },
-  title: { fontSize: 14, fontWeight: "600", color: "#fff", cursor: "pointer", marginBottom: 4, lineHeight: 1.4 },
-  channel: { fontSize: 12, color: "#aaa" },
-  removeBtn: { background: "none", border: "none", color: "#aaa", fontSize: 16, cursor: "pointer", padding: "4px 8px", flexShrink: 0 },
-  msg: { textAlign: "center", marginTop: 60, color: "#aaa", fontSize: 15 },
+  title: { fontSize: 14, fontWeight: "600", color: "var(--text)", cursor: "pointer", marginBottom: 4, lineHeight: 1.4 },
+  channel: { fontSize: 12, color: "var(--text-muted)" },
+  removeBtn: { background: "none", border: "none", color: "var(--text-muted)", fontSize: 16, cursor: "pointer", padding: "4px 8px", flexShrink: 0 },
+  msg: { textAlign: "center", marginTop: 60, color: "var(--text-muted)", fontSize: 15 },
 };

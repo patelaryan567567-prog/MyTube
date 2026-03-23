@@ -81,9 +81,9 @@ export default function Trending() {
 
 const s = {
   header: { padding: "16px 20px 0" },
-  heading: { fontSize: 22, fontWeight: "bold", color: "#fff", marginBottom: 12 },
+  heading: { fontSize: 22, fontWeight: "bold", color: "var(--text)", marginBottom: 12 },
   countryBar: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 12, scrollbarWidth: "none" },
-  countryBtn: { padding: "6px 14px", borderRadius: 20, border: "none", background: "#272727", color: "#fff", cursor: "pointer", whiteSpace: "nowrap", fontSize: 13 },
-  activeBtn: { background: "#fff", color: "#000" },
-  msg: { textAlign: "center", marginTop: 40, color: "#aaa" },
+  countryBtn: { padding: "6px 14px", borderRadius: 20, border: "1px solid var(--border)", background: "var(--hover-bg)", color: "var(--text)", cursor: "pointer", whiteSpace: "nowrap", fontSize: 13 },
+  activeBtn: { background: "var(--text)", color: "var(--bg)" },
+  msg: { textAlign: "center", marginTop: 40, color: "var(--text-muted)" },
 };
