@@ -11,7 +11,6 @@ export default function Search() {
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [nextPageToken, setNextPageToken] = useState("");
   const observerRef = useRef(null);
   const bottomRef = useRef(null);
   const nextTokenRef = useRef("");
@@ -29,11 +28,13 @@ export default function Search() {
         setVideos((prev) => [...prev, ...items.filter((i) => i.id?.kind === "youtube#video")]);
       }
       const token = res.data.nextPageToken || "";
-      setNextPageToken(token);
       nextTokenRef.current = token;
     } catch (err) { console.error(err); }
-    if (reset) setLoading(false);
-    else { setLoadingMore(false); loadingRef.current = false; }
+    finally {
+      if (reset) setLoading(false);
+      else setLoadingMore(false);
+      loadingRef.current = false;
+    }
   }, [query]);
 
   useEffect(() => {

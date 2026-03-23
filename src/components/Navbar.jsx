@@ -79,7 +79,7 @@ export default function Navbar() {
         <div style={styles.inputWrap}>
           <input
             ref={inputRef}
-            style={{ ...styles.input, width: isMobile ? "calc(100vw - 80px)" : 320 }}
+            style={{ ...styles.input, width: isMobile ? "calc(100vw - 110px)" : 320 }}
             type="text"
             placeholder="Search..."
             value={query}
@@ -95,8 +95,8 @@ export default function Navbar() {
         </div>
         <button type="submit" style={styles.searchBtn}><AiOutlineSearch size={20} /></button>
         {isMobile && (
-          <button type="button" style={styles.cancelBtn} onMouseDown={(e) => { e.preventDefault(); setMobileSearch(false); setQuery(""); }}>
-            Cancel
+          <button type="button" style={styles.cancelBtn} onMouseDown={(e) => { e.preventDefault(); setMobileSearch(false); setQuery(""); setSuggestions([]); }}>
+            <AiOutlineClose size={20} />
           </button>
         )}
       </form>
@@ -206,7 +206,7 @@ const styles = {
   },
   clearBtn: { position: "absolute", right: 8, background: "none", border: "none", color: "#aaa", cursor: "pointer", display: "flex", alignItems: "center" },
   searchBtn: { padding: "8px 14px", borderRadius: "0 20px 20px 0", border: "1px solid #333", borderLeft: "none", background: "#222", color: "#fff", cursor: "pointer" },
-  cancelBtn: { background: "none", border: "none", color: "#3ea6ff", fontSize: 14, cursor: "pointer", marginLeft: 8 },
+  cancelBtn: { background: "none", border: "none", color: "#aaa", cursor: "pointer", marginLeft: 6, display: "flex", alignItems: "center", padding: 4 },
   dropdown: {
     position: "absolute", top: "100%", left: 0,
     background: "#212121", borderRadius: "0 0 12px 12px",
