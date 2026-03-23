@@ -73,7 +73,7 @@ export default function Navbar() {
 
   const dropdownItems = query.trim() ? suggestions : history.map((h) => ({ title: h, type: "history" }));
 
-  const SearchForm = () => (
+  const searchJSX = (
     <div style={{ position: "relative" }}>
       <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} style={styles.searchForm}>
         <div style={styles.inputWrap}>
@@ -88,14 +88,14 @@ export default function Navbar() {
             onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
           />
           {query && (
-            <button type="button" style={styles.clearBtn} onClick={() => { setQuery(""); setSuggestions([]); }}>
+            <button type="button" style={styles.clearBtn} onMouseDown={(e) => { e.preventDefault(); setQuery(""); setSuggestions([]); }}>
               <AiOutlineClose size={14} />
             </button>
           )}
         </div>
         <button type="submit" style={styles.searchBtn}><AiOutlineSearch size={20} /></button>
         {isMobile && (
-          <button type="button" style={styles.cancelBtn} onClick={() => { setMobileSearch(false); setQuery(""); }}>
+          <button type="button" style={styles.cancelBtn} onMouseDown={(e) => { e.preventDefault(); setMobileSearch(false); setQuery(""); }}>
             Cancel
           </button>
         )}
@@ -127,7 +127,7 @@ export default function Navbar() {
   if (isMobile && mobileSearch) {
     return (
       <nav style={{ ...styles.nav, padding: "8px 12px" }}>
-        <SearchForm />
+        {searchJSX}
       </nav>
     );
   }
@@ -141,7 +141,7 @@ export default function Navbar() {
           {isMobile && <span style={{ ...styles.logoText, fontSize: 16 }}>MyTube</span>}
         </div>
 
-        {!isMobile && <SearchForm />}
+        {!isMobile && searchJSX}
 
         <div style={styles.authSection}>
           {isMobile && (
