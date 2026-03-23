@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { searchVideos } from "../api/youtube";
 import VideoCard from "../components/VideoCard";
@@ -10,22 +10,44 @@ export default function Search() {
   const [videos, setVideos] = useState([]);
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextPageToken, setNextPageToken] = useState("");
+  const observerRef = useRef(null);
+  const bottomRef = useRef(null);
 
-  useEffect(() => {
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const res = await searchVideos(query);
-        const items = res.data.items;
+  const fetchVideos = useCallback(async (pageToken = "", reset = false) => {
+    if (reset) setLoading(true); else setLoadingMore(true);
+    try {
+      const res = await searchVideos(query, pageToken);
+      const items = res.data.items;
+      if (reset) {
         setChannels(items.filter((i) => i.id?.kind === "youtube#channel"));
         setVideos(items.filter((i) => i.id?.kind === "youtube#video"));
-      } catch (err) {
-        console.error(err);
+      } else {
+        setVideos((prev) => [...prev, ...items.filter((i) => i.id?.kind === "youtube#video")]);
       }
-      setLoading(false);
-    };
-    if (query) fetch();
+      setNextPageToken(res.data.nextPageToken || "");
+    } catch (err) {
+      console.error(err);
+    }
+    if (reset) setLoading(false); else setLoadingMore(false);
   }, [query]);
+
+  useEffect(() => {
+    if (query) fetchVideos("", true);
+  }, [query]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && nextPageToken && !loadingMore) {
+        fetchVideos(nextPageToken);
+      }
+    });
+    if (bottomRef.current) observerRef.current.observe(bottomRef.current);
+    return () => observerRef.current?.disconnect();
+  }, [nextPageToken, loadingMore, fetchVideos]);
 
   if (loading) return <p style={styles.msg}>Searching...</p>;
 
@@ -37,16 +59,16 @@ export default function Search() {
 
       {channels.length > 0 && (
         <div style={styles.section}>
-          {channels.map((c) => (
-            <ChannelCard key={c.id?.channelId} channel={c} />
-          ))}
+          {channels.map((c) => <ChannelCard key={c.id?.channelId} channel={c} />)}
         </div>
       )}
 
       <div style={styles.grid}>
-        {videos.map((v) => (
-          <VideoCard key={v.id?.videoId} video={v} />
-        ))}
+        {videos.map((v, i) => <VideoCard key={`${v.id?.videoId}-${i}`} video={v} />)}
+      </div>
+
+      <div ref={bottomRef} style={styles.bottom}>
+        {loadingMore && <p style={styles.msg}>Loading more...</p>}
       </div>
     </div>
   );
@@ -57,5 +79,6 @@ const styles = {
   heading: { color: "#aaa", marginBottom: 16, fontSize: 15 },
   section: { marginBottom: 20 },
   grid: { display: "flex", flexWrap: "wrap", gap: 16 },
+  bottom: { marginTop: 20, textAlign: "center" },
   msg: { color: "#aaa", textAlign: "center", marginTop: 40 },
 };
