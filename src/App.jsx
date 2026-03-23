@@ -1,11 +1,17 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./context/AuthContext";
+import { MiniPlayerProvider } from "./components/MiniPlayer";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Watch from "./pages/Watch";
 import Search from "./pages/Search";
 import Channel from "./pages/Channel";
+import Subscriptions from "./pages/Subscriptions";
+import WatchLater from "./pages/WatchLater";
+import LikedVideos from "./pages/LikedVideos";
+import Trending from "./pages/Trending";
+import Shorts from "./pages/Shorts";
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -14,13 +20,21 @@ export default function App() {
     <GoogleOAuthProvider clientId={CLIENT_ID}>
       <AuthProvider>
         <BrowserRouter>
-          <Navbar />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/watch/:id" element={<Watch />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/channel/:id" element={<Channel />} />
-          </Routes>
+          <MiniPlayerProvider>
+            <Navbar />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/watch/:id" element={<Watch />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/channel/:id" element={<Channel />} />
+              <Route path="/subscriptions" element={<Subscriptions />} />
+              <Route path="/watch-later" element={<WatchLater />} />
+              <Route path="/liked" element={<LikedVideos />} />
+              <Route path="/trending" element={<Trending />} />
+              <Route path="/shorts" element={<Shorts />} />
+              <Route path="/shorts/:id" element={<Shorts />} />
+            </Routes>
+          </MiniPlayerProvider>
         </BrowserRouter>
       </AuthProvider>
     </GoogleOAuthProvider>

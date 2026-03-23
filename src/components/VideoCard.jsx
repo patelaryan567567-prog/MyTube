@@ -1,19 +1,26 @@
 import { useNavigate } from "react-router-dom";
 
+const parseDuration = (iso) => {
+  if (!iso) return null;
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return null;
+  const h = parseInt(m[1] || 0), min = parseInt(m[2] || 0), sec = parseInt(m[3] || 0);
+  if (h > 0) return `${h}:${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  return `${min}:${String(sec).padStart(2, "0")}`;
+};
+
 export default function VideoCard({ video }) {
   const navigate = useNavigate();
   const isSearch = video?.id?.videoId;
   const id = isSearch ? video.id.videoId : video.id;
   const snippet = video.snippet;
+  const duration = parseDuration(video.contentDetails?.duration);
 
   return (
     <div style={styles.card}>
       <div style={styles.thumbWrap} onClick={() => navigate(`/watch/${id}`)}>
-        <img
-          src={snippet.thumbnails?.medium?.url}
-          alt={snippet.title}
-          style={styles.thumbnail}
-        />
+        <img src={snippet.thumbnails?.medium?.url} alt={snippet.title} style={styles.thumbnail} />
+        {duration && <span style={styles.duration}>{duration}</span>}
       </div>
       <div style={styles.info}>
         {video.isLive && <span style={styles.liveBadge}>🔴 LIVE</span>}
@@ -24,9 +31,7 @@ export default function VideoCard({ video }) {
           {snippet.channelTitle}
         </p>
         {video.statistics && (
-          <p style={styles.views}>
-            {Number(video.statistics.viewCount).toLocaleString()} views
-          </p>
+          <p style={styles.views}>{Number(video.statistics.viewCount).toLocaleString()} views</p>
         )}
       </div>
     </div>
@@ -35,8 +40,13 @@ export default function VideoCard({ video }) {
 
 const styles = {
   card: { cursor: "pointer", width: "100%", minWidth: 0, flexShrink: 0, background: "transparent" },
-  thumbWrap: { borderRadius: 8, overflow: "hidden" },
+  thumbWrap: { borderRadius: 8, overflow: "hidden", position: "relative" },
   thumbnail: { width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" },
+  duration: {
+    position: "absolute", bottom: 6, right: 6,
+    background: "rgba(0,0,0,0.8)", color: "#fff",
+    fontSize: 11, fontWeight: "bold", padding: "2px 5px", borderRadius: 4,
+  },
   info: { padding: "8px 4px" },
   title: { fontSize: 14, fontWeight: "600", marginBottom: 4, color: "#fff", lineHeight: 1.4 },
   channel: { fontSize: 13, color: "#aaa", marginBottom: 2, cursor: "pointer" },

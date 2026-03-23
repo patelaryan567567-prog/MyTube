@@ -81,12 +81,18 @@ a { text-decoration: none; color: inherit; }
   left: 0;
   right: 0;
   background: #0f0f0f;
-  border-top: 1px solid #222;
-  z-index: 100;
-  padding: 8px 0;
+  border-top: 1px solid #1e1e1e;
+  z-index: 200;
+  height: 56px;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 @media (max-width: 600px) {
-  .mobile-nav { display: flex; justify-content: space-around; }
-  body { padding-bottom: 60px; }
+  .mobile-nav {
+    display: flex;
+    align-items: stretch;
+  }
+  body {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  }
 }

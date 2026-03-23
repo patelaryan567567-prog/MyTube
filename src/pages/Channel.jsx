@@ -31,12 +31,11 @@ const isShort = (v) =>
 export default function Channel() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, toggleSubscription, isSubscribed } = useAuth();
   const [channel, setChannel] = useState(null);
   const [activeTab, setActiveTab] = useState("Home");
   const [loading, setLoading] = useState(true);
   const [tabLoading, setTabLoading] = useState(false);
-  const [subscribed, setSubscribed] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
 
   const [homeVideos, setHomeVideos] = useState([]);
@@ -212,10 +211,18 @@ export default function Channel() {
             )}
           </p>
           <button
-            onClick={() => { if (!user) return alert("Login karo pehle!"); setSubscribed(!subscribed); }}
-            style={{ ...styles.subBtn, background: subscribed ? "#555" : "#fff", color: subscribed ? "#fff" : "#000" }}
+            onClick={() => {
+              if (!user) return alert("Login karo pehle!");
+              toggleSubscription({
+                id,
+                name: snippet.title,
+                avatar: snippet.thumbnails?.medium?.url,
+                subs: Number(statistics?.subscriberCount).toLocaleString() + " subscribers",
+              });
+            }}
+            style={{ ...styles.subBtn, background: isSubscribed(id) ? "#555" : "#fff", color: isSubscribed(id) ? "#fff" : "#000" }}
           >
-            {subscribed ? "✓ Subscribed" : "Subscribe"}
+            {isSubscribed(id) ? "✓ Subscribed" : "Subscribe"}
           </button>
         </div>
       </div>

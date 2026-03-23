@@ -42,10 +42,10 @@ const smartGet = async (url, params, keys) => {
 };
 
 export const getTrending = (pageToken = "") =>
-  smartGet("/videos", { part: "snippet,statistics", chart: "mostPopular", maxResults: 20, regionCode: "IN", pageToken }, HOME_KEYS);
+  smartGet("/videos", { part: "snippet,statistics,contentDetails", chart: "mostPopular", maxResults: 20, regionCode: "IN", pageToken }, HOME_KEYS);
 
 export const getVideosByCategory = (categoryId, pageToken = "") =>
-  smartGet("/videos", { part: "snippet,statistics", chart: "mostPopular", videoCategoryId: categoryId, maxResults: 20, regionCode: "IN", pageToken }, HOME_KEYS);
+  smartGet("/videos", { part: "snippet,statistics,contentDetails", chart: "mostPopular", videoCategoryId: categoryId, maxResults: 20, regionCode: "IN", pageToken }, HOME_KEYS);
 
 export const searchVideos = (query, pageToken = "") =>
   smartGet("/search", { part: "snippet", q: query, maxResults: 20, pageToken }, SEARCH_KEYS);
@@ -54,7 +54,13 @@ export const getSearchSuggestions = (query) =>
   smartGet("/search", { part: "snippet", q: query, maxResults: 8 }, SEARCH_KEYS);
 
 export const getVideoById = (id) =>
-  smartGet("/videos", { part: "snippet,statistics", id }, VIDEO_KEYS);
+  smartGet("/videos", { part: "snippet,statistics,contentDetails", id }, VIDEO_KEYS);
+
+export const getVideoDurations = (ids) =>
+  smartGet("/videos", { part: "contentDetails", id: ids.join(","), maxResults: 50 }, VIDEO_KEYS);
+
+export const getTrendingByCountry = (regionCode = "IN", pageToken = "") =>
+  smartGet("/videos", { part: "snippet,statistics", chart: "mostPopular", maxResults: 20, regionCode, pageToken }, HOME_KEYS);
 
 export const getRelatedVideos = (query, pageToken = "") =>
   smartGet("/search", { part: "snippet", q: query, type: "video", maxResults: 15, pageToken }, VIDEO_KEYS);
@@ -102,3 +108,12 @@ export const getChannelPlaylists = (channelId) =>
 
 export const getPlaylistVideos = (playlistId) =>
   smartGet("/playlistItems", { part: "snippet", playlistId, maxResults: 20 }, VIDEO_KEYS);
+
+export const getVideoComments = (videoId, pageToken = "") =>
+  smartGet("/commentThreads", { part: "snippet", videoId, maxResults: 20, order: "relevance", pageToken }, VIDEO_KEYS);
+
+export const getShorts = (pageToken = "") =>
+  smartGet("/search", { part: "snippet", q: "#shorts", type: "video", videoDuration: "short", maxResults: 20, regionCode: "IN", pageToken }, SEARCH_KEYS);
+
+export const getShortsByIds = (ids) =>
+  smartGet("/videos", { part: "snippet,statistics,contentDetails", id: ids.join(",") }, VIDEO_KEYS);
