@@ -14,18 +14,13 @@ export default function VideoCard({ video }) {
           alt={snippet.title}
           style={styles.thumbnail}
         />
-        </div>
+      </div>
       <div style={styles.info}>
+        {video.isLive && <span style={styles.liveBadge}>🔴 LIVE</span>}
         <p style={styles.title} onClick={() => navigate(`/watch/${id}`)}>
           {snippet.title?.slice(0, 65)}{snippet.title?.length > 65 ? "..." : ""}
         </p>
-        {video.isLive && <span style={styles.liveBadge}>🔴 LIVE</span>}
-          {snippet.title?.slice(0, 65)}{snippet.title?.length > 65 ? "..." : ""}
-        </p>
-        <p
-          style={styles.channel}
-          onClick={() => navigate(`/channel/${snippet.channelId}`)}
-        >
+        <p style={styles.channel} onClick={() => navigate(`/channel/${snippet.channelId}`)}>
           {snippet.channelTitle}
         </p>
         {video.statistics && (
@@ -39,53 +34,12 @@ export default function VideoCard({ video }) {
 }
 
 const styles = {
-  card: {
-    cursor: "pointer",
-    width: 280,
-    minWidth: 280,
-    flexShrink: 0,
-    background: "transparent",
-  },
-  thumbWrap: {
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-  thumbnail: {
-    width: "100%",
-    height: 158,
-    objectFit: "cover",
-    display: "block",
-    transition: "transform 0.2s",
-  },
-  info: {
-    padding: "8px 4px",
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 4,
-    color: "#fff",
-    lineHeight: 1.4,
-  },
-  channel: {
-    fontSize: 13,
-    color: "#aaa",
-    marginBottom: 2,
-    cursor: "pointer",
-    ":hover": { color: "#fff" },
-  },
-  views: {
-    fontSize: 12,
-    color: "#aaa",
-  },
-  liveBadge: {
-    display: "inline-block",
-    background: "#ff0000",
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "bold",
-    padding: "2px 6px",
-    borderRadius: 4,
-    marginBottom: 4,
-  },
+  card: { cursor: "pointer", width: 280, minWidth: 280, flexShrink: 0, background: "transparent" },
+  thumbWrap: { borderRadius: 8, overflow: "hidden" },
+  thumbnail: { width: "100%", height: 158, objectFit: "cover", display: "block" },
+  info: { padding: "8px 4px" },
+  title: { fontSize: 14, fontWeight: "600", marginBottom: 4, color: "#fff", lineHeight: 1.4 },
+  channel: { fontSize: 13, color: "#aaa", marginBottom: 2, cursor: "pointer" },
+  views: { fontSize: 12, color: "#aaa" },
+  liveBadge: { display: "inline-block", background: "#ff0000", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "2px 6px", borderRadius: 4, marginBottom: 4 },
 };
