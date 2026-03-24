@@ -22,6 +22,7 @@ export default function Shorts() {
   const [loading, setLoading]     = useState(true);
   const [copied, setCopied]       = useState(false);
   const [paused, setPaused]       = useState(false);
+  const activeIdxRef = useRef(0);
 
   const nextPageRef  = useRef("");
   const fetchingRef  = useRef(false);
@@ -74,15 +75,16 @@ export default function Shorts() {
 
   useEffect(() => { shortsLenRef.current = shorts.length; }, [shorts]);
 
-  // Reset paused state when active short changes
-  useEffect(() => { setPaused(false); }, [activeIdx]);
-
-  useEffect(() => {
+useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const onScroll = () => {
       const idx = Math.round(el.scrollTop / el.clientHeight);
-      setActiveIdx(idx);
+      if (idx !== activeIdxRef.current) {
+        activeIdxRef.current = idx;
+        setActiveIdx(idx);
+        setPaused(false);
+      }
       if (idx >= shortsLenRef.current - 4) fetchMore();
     };
     el.addEventListener("scroll", onScroll, { passive: true });
@@ -134,6 +136,7 @@ export default function Shorts() {
                 {isActive ? (
                   <>
                     <iframe
+                      key={`short-${v.id}-${idx}`}
                       ref={(el) => { if (el) iframeRefs.current[v.id] = el; }}
                       src={`https://www.youtube.com/embed/${v.id}?autoplay=1&loop=1&playlist=${v.id}&controls=0&modestbranding=1&rel=0&enablejsapi=1`}
                       style={s.iframe}
