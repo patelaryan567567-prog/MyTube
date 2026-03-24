@@ -22,7 +22,6 @@ export default function Shorts() {
   const [loading, setLoading]     = useState(true);
   const [copied, setCopied]       = useState(false);
   const [paused, setPaused]       = useState(false);
-  const activeIdxRef = useRef(0);
 
   const nextPageRef  = useRef("");
   const fetchingRef  = useRef(false);
@@ -30,6 +29,7 @@ export default function Shorts() {
   const scrolledRef  = useRef(false);
   const shortsLenRef = useRef(0);
   const iframeRefs   = useRef({});
+  const slideRefs    = useRef({});
 
   const fetchMore = useCallback(async (reset = false) => {
     if (fetchingRef.current) return;
@@ -75,21 +75,27 @@ export default function Shorts() {
 
   useEffect(() => { shortsLenRef.current = shorts.length; }, [shorts]);
 
-useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const idx = Math.round(el.scrollTop / el.clientHeight);
-      if (idx !== activeIdxRef.current) {
-        activeIdxRef.current = idx;
-        setActiveIdx(idx);
-        setPaused(false);
-      }
-      if (idx >= shortsLenRef.current - 4) fetchMore();
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [fetchMore]);
+  useEffect(() => {
+    if (shorts.length === 0) return;
+    const observers = [];
+    shorts.forEach((v, idx) => {
+      const el = slideRefs.current[v.id];
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+            setActiveIdx(idx);
+            setPaused(false);
+            if (idx >= shortsLenRef.current - 4) fetchMore();
+          }
+        },
+        { root: containerRef.current, threshold: 0.6 }
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, [shorts, fetchMore]);
 
   const handleTap = (videoId) => {
     const iframe = iframeRefs.current[videoId];
@@ -131,7 +137,7 @@ useEffect(() => {
           const subbed = isSubscribed(v.snippet.channelId);
           const isActive = activeIdx === idx;
           return (
-            <div key={v.id} style={s.slide}>
+            <div key={v.id} ref={(el) => { if (el) slideRefs.current[v.id] = el; }} style={s.slide}>
               <div style={s.playerWrap}>
                 {isActive ? (
                   <>
