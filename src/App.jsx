@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
-import { MiniPlayerProvider } from "./components/MiniPlayer";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Watch from "./pages/Watch";
@@ -24,8 +23,7 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <BrowserRouter>
-            <MiniPlayerProvider>
-              <Navbar />
+            <Navbar />
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/watch/:id" element={<Watch />} />
@@ -40,7 +38,6 @@ export default function App() {
                 <Route path="/you" element={<You />} />
                 <Route path="/playlist/:id" element={<Playlist />} />
               </Routes>
-            </MiniPlayerProvider>
           </BrowserRouter>
         </AuthProvider>
       </ThemeProvider>

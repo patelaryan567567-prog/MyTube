@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getVideoById, getRelatedVideos, getVideoComments } from "../api/youtube";
 import { useAuth } from "../context/AuthContext";
-import { useMiniPlayer } from "../components/MiniPlayer";
 import VideoCard from "../components/VideoCard";
 import { AiOutlineLike, AiFillLike, AiOutlineClockCircle, AiFillClockCircle } from "react-icons/ai";
 import { MdOutlineSubscriptions, MdShare } from "react-icons/md";
@@ -44,7 +43,6 @@ export default function Watch() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, toggleSubscription, isSubscribed, toggleWatchLater, isWatchLater, toggleLiked, isLiked } = useAuth();
-  const { setMini } = useMiniPlayer();
 
   const [video, setVideo]                   = useState(null);
   const [related, setRelated]               = useState([]);
@@ -78,16 +76,6 @@ export default function Watch() {
       setCommentsLoading(false);
     })();
   }, [id]);
-
-  // Mini player when player scrolls out of view
-  useEffect(() => {
-    if (!video || !playerRef.current) return;
-    const obs = new IntersectionObserver(([e]) => {
-      setMini(e.isIntersecting ? null : { id, title: video.snippet.title });
-    }, { threshold: 0.1 });
-    obs.observe(playerRef.current);
-    return () => { obs.disconnect(); setMini(null); };
-  }, [video, id, setMini]);
 
   const loadMoreComments = async () => {
     if (!commentsNextPage || loadingMore) return;
