@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AiOutlineSearch, AiOutlineClose, AiOutlineClockCircle } from "react-icons/ai";
 import { MdHistory, MdHome, MdHomeFilled, MdSearch, MdSubscriptions, MdOutlineSubscriptions, MdThumbUpOffAlt, MdSlowMotionVideo, MdOutlineSlowMotionVideo } from "react-icons/md";
-import { RiYoutubeLine } from "react-icons/ri";
+import MyTubeLogo from "./MyTubeLogo";
 import { HiOutlineMenuAlt3 } from "react-icons/hi";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
@@ -142,9 +142,9 @@ export default function Navbar() {
       <nav style={st.nav}>
         {/* Left: hamburger + logo */}
         <div style={st.navLeft}>
-          <button style={st.iconBtn}><HiOutlineMenuAlt3 size={22} color="var(--text)" /></button>
+
           <div style={st.logo} onClick={() => navigate("/")}>
-            <RiYoutubeLine size={28} color="#ff0000" />
+            <MyTubeLogo size={32} />
             <span style={st.logoText}>MyTube</span>
           </div>
         </div>
@@ -211,7 +211,7 @@ export default function Navbar() {
                 style={{ ...st.avatar, cursor: "pointer" }}
                 onClick={() => setShowUserMenu((p) => !p)}
               />
-              {!isMobile && showUserMenu && (
+              {showUserMenu && (
                 <div style={st.userMenu}>
                   <div style={st.menuHeader}>
                     <img src={user.picture} alt="" style={st.menuAvatar} />
@@ -278,7 +278,7 @@ export default function Navbar() {
           />
           {/* Center logo */}
           <button style={nb.centerBtn} onClick={() => navigate("/")}>
-            <RiYoutubeLine size={28} color="#ff0000" />
+            <MyTubeLogo size={30} />
           </button>
           <MobBtn
             icon={isActive("/subscriptions") ? <MdSubscriptions size={24}/> : <MdOutlineSubscriptions size={24}/>}
@@ -295,24 +295,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* Mobile user menu (above bottom nav) */}
-      {isMobile && showUserMenu && user && (
-        <div style={st.mobileUserMenu} ref={menuRef}>
-          <div style={st.menuHeader}>
-            <img src={user.picture} alt="" style={st.menuAvatar} />
-            <div>
-              <p style={st.menuName}>{user.name}</p>
-              <p style={st.menuEmail}>{user.email}</p>
-            </div>
-          </div>
-          <hr style={st.menuDivider} />
-          <button style={st.menuItem} onClick={() => goTo("/watch-later")}><AiOutlineClockCircle size={16} /> Watch Later</button>
-          <button style={st.menuItem} onClick={() => goTo("/liked")}><MdThumbUpOffAlt size={16} /> Liked Videos</button>
-          <button style={st.menuItem} onClick={() => goTo("/subscriptions")}><MdSubscriptions size={16} /> Subscriptions</button>
-          <hr style={st.menuDivider} />
-          <button style={{ ...st.menuItem, color: "#ff4444" }} onClick={() => { setUser(null); setShowUserMenu(false); }}>Sign out</button>
-        </div>
-      )}
+
     </>
   );
 }
