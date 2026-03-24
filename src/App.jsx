@@ -14,6 +14,7 @@ import LikedVideos from "./pages/LikedVideos";
 import Trending from "./pages/Trending";
 import Shorts from "./pages/Shorts";
 import You from "./pages/You";
+import Playlist from "./pages/Playlist";
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -37,6 +38,7 @@ export default function App() {
                 <Route path="/shorts" element={<Shorts />} />
                 <Route path="/shorts/:id" element={<Shorts />} />
                 <Route path="/you" element={<You />} />
+                <Route path="/playlist/:id" element={<Playlist />} />
               </Routes>
             </MiniPlayerProvider>
           </BrowserRouter>

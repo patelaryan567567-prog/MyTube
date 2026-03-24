@@ -153,7 +153,7 @@ export default function Channel() {
             <p style={sec.title}>Playlists</p>
             <div style={sec.row}>
               {homePlaylists.map((p) => (
-                <div key={p.id} style={styles.playlistCard}>
+                <div key={p.id} style={styles.playlistCard} onClick={() => navigate(`/playlist/${p.id}`)}>
                   <img src={p.snippet.thumbnails?.medium?.url} alt="" style={styles.playlistThumb} />
                   <p style={styles.playlistTitle}>{p.snippet.title}</p>
                   <p style={styles.playlistCount}>{p.contentDetails?.itemCount} videos</p>
@@ -170,7 +170,7 @@ export default function Channel() {
         {playlists.length === 0
           ? <p style={styles.msg}>No Playlists found</p>
           : playlists.map((p) => (
-            <div key={p.id} style={styles.playlistCard}>
+            <div key={p.id} style={styles.playlistCard} onClick={() => navigate(`/playlist/${p.id}`)}>
               <img src={p.snippet.thumbnails?.medium?.url} alt="" style={styles.playlistThumb} />
               <p style={styles.playlistTitle}>{p.snippet.title}</p>
               <p style={styles.playlistCount}>{p.contentDetails?.itemCount} videos</p>
