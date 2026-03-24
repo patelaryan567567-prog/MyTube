@@ -108,8 +108,8 @@ export default function Navbar() {
               )}
             </div>
             <button type="submit" style={st.searchBtn}><AiOutlineSearch size={20} /></button>
-            <button type="button" style={st.cancelBtn} onMouseDown={(e) => { e.preventDefault(); setMobileSearch(false); setQuery(""); setSuggestions([]); }}>
-              Cancel
+            <button type="button" style={st.iconBtn} onMouseDown={(e) => { e.preventDefault(); setMobileSearch(false); setQuery(""); setSuggestions([]); }}>
+              <AiOutlineClose size={20} color="var(--text)" />
             </button>
           </form>
           {showDropdown && dropdownItems.length > 0 && (
