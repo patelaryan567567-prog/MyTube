@@ -142,7 +142,7 @@ export default function Navbar() {
       <nav style={st.nav}>
         {/* Left: hamburger + logo */}
         <div style={st.navLeft}>
-          <button style={st.iconBtn}><HiOutlineMenuAlt3 size={22} color="#fff" /></button>
+          <button style={st.iconBtn}><HiOutlineMenuAlt3 size={22} color="var(--text)" /></button>
           <div style={st.logo} onClick={() => navigate("/")}>
             <RiYoutubeLine size={28} color="#ff0000" />
             <span style={st.logoText}>MyTube</span>
@@ -211,7 +211,7 @@ export default function Navbar() {
                 style={{ ...st.avatar, cursor: "pointer" }}
                 onClick={() => setShowUserMenu((p) => !p)}
               />
-              {showUserMenu && (
+              {!isMobile && showUserMenu && (
                 <div style={st.userMenu}>
                   <div style={st.menuHeader}>
                     <img src={user.picture} alt="" style={st.menuAvatar} />
