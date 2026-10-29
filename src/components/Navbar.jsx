@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AiOutlineSearch, AiOutlineClose, AiOutlineClockCircle } from "react-icons/ai";
-import { MdHistory, MdHome, MdHomeFilled, MdSearch, MdSubscriptions, MdOutlineSubscriptions, MdThumbUpOffAlt, MdSlowMotionVideo, MdOutlineSlowMotionVideo } from "react-icons/md";
+import {
+  MdHistory, MdHome, MdHomeFilled, MdSubscriptions, MdOutlineSubscriptions, MdThumbUpOffAlt,
+  MdSlowMotionVideo, MdOutlineSlowMotionVideo, MdWhatshot, MdOutlineWhatshot,
+} from "react-icons/md";
 import MyTubeLogo from "./MyTubeLogo";
-import { HiOutlineMenuAlt3 } from "react-icons/hi";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { useAuth } from "../context/AuthContext";
@@ -12,10 +14,36 @@ import { getSearchSuggestions } from "../api/youtube";
 
 const HISTORY_KEY = "mytube_search_history";
 
+const loadHistory = () => {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
+};
+
+function SuggestionDropdown({ items, showRecentLabel, width, onPick, onRemove }) {
+  return (
+    <div style={{ ...st.dropdown, width }}>
+      {showRecentLabel && <p style={st.dropLabel}>Recent searches</p>}
+      {items.map((s, i) => (
+        <div key={i} style={st.suggItem} onMouseDown={() => onPick(s)}>
+          {s.type === "history" ? <MdHistory size={15} color="var(--text-muted)" />
+            : s.type === "channel" ? <img src={s.thumb} alt="" style={st.suggThumb} />
+            : <AiOutlineSearch size={14} color="var(--text-muted)" />}
+          <span style={st.suggText}>{s.title?.slice(0, 60)}</span>
+          {s.type === "channel" && <span style={st.channelBadge}>Channel</span>}
+          {s.type === "history" && (
+            <button style={st.removeBtn} onMouseDown={(e) => onRemove(e, s.title)} aria-label="Remove from history">
+              <AiOutlineClose size={11} />
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Navbar() {
   const [query, setQuery]               = useState("");
   const [suggestions, setSuggestions]   = useState([]);
-  const [history, setHistory]           = useState(() => JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"));
+  const [history, setHistory]           = useState(loadHistory);
   const [showDropdown, setShowDropdown] = useState(false);
   const [mobileSearch, setMobileSearch] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -44,7 +72,7 @@ export default function Navbar() {
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await getSearchSuggestions(query);
-        setSuggestions(res.data.items.map((i) => ({
+        setSuggestions((res.data.items || []).map((i) => ({
           title: i.snippet.title,
           type: i.id?.kind === "youtube#channel" ? "channel" : "video",
           id: i.id?.channelId || i.id?.videoId,
@@ -52,6 +80,7 @@ export default function Navbar() {
         })));
       } catch { setSuggestions([]); }
     }, 400);
+    return () => clearTimeout(debounceRef.current);
   }, [query]);
 
   useEffect(() => {
@@ -60,25 +89,24 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", fn);
   }, []);
 
-  const saveHistory = (q) => {
-    const updated = [q, ...history.filter((h) => h !== q)].slice(0, 10);
-    setHistory(updated);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+  const persistHistory = (list) => {
+    setHistory(list);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch { /* storage unavailable */ }
   };
+
+  const saveHistory = (q) => persistHistory([q, ...history.filter((h) => h !== q)].slice(0, 10));
 
   const removeHistory = (e, item) => {
     e.stopPropagation();
-    const updated = history.filter((h) => h !== item);
-    setHistory(updated);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+    persistHistory(history.filter((h) => h !== item));
   };
 
   const handleSearch = (sugg) => {
-    const q = sugg?.title || query;
-    if (!q.trim()) return;
+    const q = (sugg?.title || query).trim();
+    if (!q) return;
     setShowDropdown(false); setMobileSearch(false);
     setQuery(q); saveHistory(q);
-    navigate(`/search?q=${q}`);
+    navigate(`/search?q=${encodeURIComponent(q)}`);
   };
 
   const goTo = (path) => { setShowUserMenu(false); navigate(path); };
@@ -95,41 +123,28 @@ export default function Navbar() {
               <input
                 ref={inputRef}
                 style={{ ...st.input, width: "calc(100vw - 100px)" }}
-                type="text" placeholder="Search..."
+                type="text" placeholder="Search"
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setShowDropdown(true); }}
                 onFocus={() => setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
               />
               {query && (
-                <button type="button" style={st.clearBtn} onMouseDown={(e) => { e.preventDefault(); setQuery(""); setSuggestions([]); }}>
+                <button type="button" style={st.clearBtn} onMouseDown={(e) => { e.preventDefault(); setQuery(""); setSuggestions([]); }} aria-label="Clear search">
                   <AiOutlineClose size={14} />
                 </button>
               )}
             </div>
-            <button type="submit" style={st.searchBtn}><AiOutlineSearch size={20} /></button>
-            <button type="button" style={st.iconBtn} onMouseDown={(e) => { e.preventDefault(); setMobileSearch(false); setQuery(""); setSuggestions([]); }}>
+            <button type="submit" style={st.searchBtn} aria-label="Search"><AiOutlineSearch size={20} /></button>
+            <button type="button" style={st.iconBtn} aria-label="Close search" onMouseDown={(e) => { e.preventDefault(); setMobileSearch(false); setQuery(""); setSuggestions([]); }}>
               <AiOutlineClose size={20} color="var(--text)" />
             </button>
           </form>
           {showDropdown && dropdownItems.length > 0 && (
-            <div style={{ ...st.dropdown, width: "calc(100vw - 16px)" }}>
-              {!query.trim() && <p style={st.dropLabel}>Recent searches</p>}
-              {dropdownItems.map((s, i) => (
-                <div key={i} style={st.suggItem} onMouseDown={() => handleSearch(s)}>
-                  {s.type === "history" ? <MdHistory size={15} color="#aaa" />
-                    : s.type === "channel" ? <img src={s.thumb} alt="" style={st.suggThumb} />
-                    : <AiOutlineSearch size={14} color="#aaa" />}
-                  <span style={st.suggText}>{s.title?.slice(0, 60)}</span>
-                  {s.type === "channel" && <span style={st.channelBadge}>Channel</span>}
-                  {s.type === "history" && (
-                    <button style={st.removeBtn} onMouseDown={(e) => removeHistory(e, s.title)}>
-                      <AiOutlineClose size={11} />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+            <SuggestionDropdown
+              items={dropdownItems} showRecentLabel={!query.trim()}
+              width="calc(100vw - 16px)" onPick={handleSearch} onRemove={removeHistory}
+            />
           )}
         </div>
       </nav>
@@ -140,16 +155,13 @@ export default function Navbar() {
     <>
       {/* ════════════════ TOP NAVBAR ════════════════ */}
       <nav style={st.nav}>
-        {/* Left: hamburger + logo */}
         <div style={st.navLeft}>
-
           <div style={st.logo} onClick={() => navigate("/")}>
             <MyTubeLogo size={32} />
             <span style={st.logoText}>MyTube</span>
           </div>
         </div>
 
-        {/* Center: search bar (hidden on mobile) */}
         {!isMobile && (
           <div style={{ position: "relative" }}>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} style={st.searchForm}>
@@ -164,44 +176,29 @@ export default function Navbar() {
                   onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
                 />
                 {query && (
-                  <button type="button" style={st.clearBtn} onMouseDown={(e) => { e.preventDefault(); setQuery(""); setSuggestions([]); }}>
+                  <button type="button" style={st.clearBtn} onMouseDown={(e) => { e.preventDefault(); setQuery(""); setSuggestions([]); }} aria-label="Clear search">
                     <AiOutlineClose size={14} />
                   </button>
                 )}
               </div>
-              <button type="submit" style={st.searchBtn}><AiOutlineSearch size={20} /></button>
+              <button type="submit" style={st.searchBtn} aria-label="Search"><AiOutlineSearch size={20} /></button>
             </form>
             {showDropdown && dropdownItems.length > 0 && (
-              <div style={{ ...st.dropdown, width: 480 }}>
-                {!query.trim() && <p style={st.dropLabel}>Recent searches</p>}
-                {dropdownItems.map((s, i) => (
-                  <div key={i} style={st.suggItem} onMouseDown={() => handleSearch(s)}>
-                    {s.type === "history" ? <MdHistory size={15} color="#aaa" />
-                      : s.type === "channel" ? <img src={s.thumb} alt="" style={st.suggThumb} />
-                      : <AiOutlineSearch size={14} color="#aaa" />}
-                    <span style={st.suggText}>{s.title?.slice(0, 60)}</span>
-                    {s.type === "channel" && <span style={st.channelBadge}>Channel</span>}
-                    {s.type === "history" && (
-                      <button style={st.removeBtn} onMouseDown={(e) => removeHistory(e, s.title)}>
-                        <AiOutlineClose size={11} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <SuggestionDropdown
+                items={dropdownItems} showRecentLabel={!query.trim()}
+                width={480} onPick={handleSearch} onRemove={removeHistory}
+              />
             )}
           </div>
         )}
 
-        {/* Right: search icon (mobile) + theme toggle + auth */}
         <div style={st.navRight}>
           {isMobile && (
-            <button style={st.iconBtn} onClick={() => setMobileSearch(true)}>
+            <button style={st.iconBtn} onClick={() => setMobileSearch(true)} aria-label="Search">
               <AiOutlineSearch size={22} color="var(--text)" />
             </button>
           )}
-          {/* ── Theme Toggle ── */}
-          <button className={`theme-toggle ${dark ? "dark" : "light"}`} onClick={toggleTheme} title={dark ? "Switch to Light" : "Switch to Dark"}>
+          <button className={`theme-toggle ${dark ? "dark" : "light"}`} onClick={toggleTheme} title={dark ? "Switch to light theme" : "Switch to dark theme"} aria-label="Toggle theme">
             <div className="knob">{dark ? "🌙" : "☀️"}</div>
           </button>
           {user ? (
@@ -222,8 +219,9 @@ export default function Navbar() {
                   </div>
                   <hr style={st.menuDivider} />
                   <button style={st.menuItem} onClick={() => goTo("/watch-later")}><AiOutlineClockCircle size={16} /> Watch Later</button>
-                  <button style={st.menuItem} onClick={() => goTo("/liked")}><MdThumbUpOffAlt size={16} /> Liked Videos</button>
+                  <button style={st.menuItem} onClick={() => goTo("/liked")}><MdThumbUpOffAlt size={16} /> Liked videos</button>
                   <button style={st.menuItem} onClick={() => goTo("/subscriptions")}><MdSubscriptions size={16} /> Subscriptions</button>
+                  <button style={st.menuItem} onClick={() => goTo("/trending")}><MdWhatshot size={16} /> Trending</button>
                   <hr style={st.menuDivider} />
                   <button style={{ ...st.menuItem, color: "#ff4444" }} onClick={() => { setUser(null); setShowUserMenu(false); }}>Sign out</button>
                 </div>
@@ -252,6 +250,10 @@ export default function Navbar() {
             label="Shorts" active={isActive("/shorts")} onClick={() => navigate("/shorts")}
           />
           <SideBtn
+            icon={isActive("/trending") ? <MdWhatshot size={24}/> : <MdOutlineWhatshot size={24}/>}
+            label="Trending" active={isActive("/trending")} onClick={() => navigate("/trending")}
+          />
+          <SideBtn
             icon={isActive("/subscriptions") ? <MdSubscriptions size={24}/> : <MdOutlineSubscriptions size={24}/>}
             label="Subscriptions" active={isActive("/subscriptions")} onClick={() => navigate("/subscriptions")}
           />
@@ -276,10 +278,10 @@ export default function Navbar() {
             icon={isActive("/shorts") ? <MdSlowMotionVideo size={24}/> : <MdOutlineSlowMotionVideo size={24}/>}
             label="Shorts" active={isActive("/shorts")} onClick={() => navigate("/shorts")}
           />
-          {/* Center logo */}
-          <button style={nb.centerBtn} onClick={() => navigate("/")}>
-            <MyTubeLogo size={30} />
-          </button>
+          <MobBtn
+            icon={isActive("/trending") ? <MdWhatshot size={24}/> : <MdOutlineWhatshot size={24}/>}
+            label="Trending" active={isActive("/trending")} onClick={() => navigate("/trending")}
+          />
           <MobBtn
             icon={isActive("/subscriptions") ? <MdSubscriptions size={24}/> : <MdOutlineSubscriptions size={24}/>}
             label="Subscriptions" active={isActive("/subscriptions")} onClick={() => navigate("/subscriptions")}
@@ -287,15 +289,13 @@ export default function Navbar() {
           <MobBtn
             icon={user
               ? <img src={user.picture} alt="" style={{ width: 24, height: 24, borderRadius: "50%", border: isActive("/you") ? "2px solid var(--text)" : "none" }}/>
-              : <div style={nb.youCircle}><span style={{ fontSize: 9, color: "var(--text-muted)" }}>You</span></div>
+              : <div style={st.youCircle}><span style={{ fontSize: 9, color: "var(--text-muted)" }}>You</span></div>
             }
             label="You" active={isActive("/you")}
             onClick={() => navigate("/you")}
           />
         </div>
       )}
-
-
     </>
   );
 }
@@ -309,16 +309,17 @@ function SideBtn({ icon, label, active, onClick }) {
       onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
     >
       <span style={{ color: active ? "var(--text)" : "var(--text-muted)", display: "flex" }}>{icon}</span>
-      <span style={{ ...sb.label, color: active ? "var(--text)" : "var(--text-muted)", fontWeight: active ? "600" : "400" }}>{label}</span>
+      <span style={{ ...sb.label, color: active ? "var(--text)" : "var(--text-muted)", fontWeight: active ? 600 : 400 }}>{label}</span>
     </button>
   );
 }
 
 function MobBtn({ icon, label, active, onClick }) {
+  const color = active ? "var(--text)" : "var(--text-muted)";
   return (
     <button style={nb.btn} onClick={onClick}>
-      <span style={{ color: active ? "#fff" : "#aaa", display: "flex", alignItems: "center" }}>{icon}</span>
-      <span style={{ ...nb.label, color: active ? "#fff" : "#aaa", fontWeight: active ? "600" : "400" }}>{label}</span>
+      <span style={{ color, display: "flex", alignItems: "center" }}>{icon}</span>
+      <span style={{ ...nb.label, color, fontWeight: active ? 600 : 400 }}>{label}</span>
     </button>
   );
 }
@@ -329,24 +330,21 @@ const sb = {
 };
 
 const nb = {
-  btn:       { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", padding: "4px 0", gap: 3 },
-  label:     { fontSize: 9, letterSpacing: 0.1 },
-  centerBtn: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer" },
-  youCircle: { width: 24, height: 24, borderRadius: "50%", background: "#333", display: "flex", alignItems: "center", justifyContent: "center" },
+  btn:   { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", padding: "4px 0", gap: 3 },
+  label: { fontSize: 10 },
 };
 
 const st = {
   nav:         { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", background: "var(--nav-bg)", borderBottom: "1px solid var(--border)", position: "fixed", top: 0, left: 0, right: 0, zIndex: 300, height: 56 },
   navLeft:     { display: "flex", alignItems: "center", gap: 4, flexShrink: 0 },
   navRight:    { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 },
-  logo:        { display: "flex", alignItems: "center", gap: 4, cursor: "pointer" },
-  logoText:    { fontWeight: "bold", color: "var(--text)", fontSize: 18 },
+  logo:        { display: "flex", alignItems: "center", gap: 6, cursor: "pointer" },
+  logoText:    { fontFamily: "var(--font-heading)", fontWeight: 700, color: "var(--text)", fontSize: 20, letterSpacing: "-0.02em" },
   searchForm:  { display: "flex", alignItems: "center" },
   inputWrap:   { position: "relative", display: "flex", alignItems: "center" },
   input:       { width: 480, padding: "8px 36px 8px 16px", borderRadius: "40px 0 0 40px", border: "1px solid var(--input-border)", background: "var(--input-bg)", color: "var(--text)", outline: "none", fontSize: 15 },
   clearBtn:    { position: "absolute", right: 10, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center" },
   searchBtn:   { padding: "8px 18px", borderRadius: "0 40px 40px 0", border: "1px solid var(--input-border)", borderLeft: "none", background: "var(--hover-bg)", color: "var(--text)", cursor: "pointer" },
-  cancelBtn:   { background: "none", border: "none", color: "#3ea6ff", cursor: "pointer", marginLeft: 8, fontSize: 14, padding: "4px 8px" },
   dropdown:    { position: "absolute", top: "calc(100% + 4px)", left: 0, background: "var(--card-bg)", borderRadius: 12, border: "1px solid var(--border)", zIndex: 400, overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" },
   dropLabel:   { fontSize: 11, color: "var(--text-muted)", padding: "8px 16px 4px", margin: 0 },
   suggItem:    { display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", cursor: "pointer" },
@@ -356,12 +354,10 @@ const st = {
   removeBtn:   { background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", padding: 2 },
   iconBtn:     { background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: 6 },
   avatar:      { width: 32, height: 32, borderRadius: "50%" },
-  authSection: { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 },
   userMenu:    { position: "absolute", top: "calc(100% + 8px)", right: 0, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, minWidth: 230, zIndex: 500, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" },
-  mobileUserMenu: { position: "fixed", bottom: 60, left: 0, right: 0, background: "var(--card-bg)", borderTop: "1px solid var(--border)", borderRadius: "16px 16px 0 0", zIndex: 400, overflow: "hidden", boxShadow: "0 -4px 20px rgba(0,0,0,0.4)" },
-  menuHeader:  { display: "flex", alignItems: "center", gap: 12, padding: "16px" },
+  menuHeader:  { display: "flex", alignItems: "center", gap: 12, padding: 16 },
   menuAvatar:  { width: 40, height: 40, borderRadius: "50%" },
-  menuName:    { fontSize: 14, fontWeight: "bold", color: "var(--text)" },
+  menuName:    { fontSize: 14, fontWeight: 600, color: "var(--text)" },
   menuEmail:   { fontSize: 12, color: "var(--text-muted)" },
   menuDivider: { border: "none", borderTop: "1px solid var(--border)", margin: "4px 0" },
   menuItem:    { display: "flex", alignItems: "center", gap: 12, width: "100%", background: "none", border: "none", color: "var(--text)", padding: "12px 16px", cursor: "pointer", fontSize: 14, textAlign: "left" },

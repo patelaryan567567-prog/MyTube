@@ -4,6 +4,7 @@ export default function ChannelCard({ channel }) {
   const navigate = useNavigate();
   const snippet = channel.snippet;
   const id = channel.id?.channelId || channel.id;
+  const description = snippet.description || "";
 
   return (
     <div style={styles.card} onClick={() => navigate(`/channel/${id}`)}>
@@ -14,7 +15,9 @@ export default function ChannelCard({ channel }) {
       />
       <div style={styles.info}>
         <p style={styles.name}>{snippet.title}</p>
-        <p style={styles.desc}>{snippet.description?.slice(0, 80) || "YouTube Channel"}...</p>
+        <p style={styles.desc}>
+          {description ? `${description.slice(0, 80)}${description.length > 80 ? "…" : ""}` : "YouTube channel"}
+        </p>
         <span style={styles.badge}>Channel</span>
       </div>
     </div>
@@ -28,9 +31,8 @@ const styles = {
     gap: 20,
     padding: "16px 20px",
     cursor: "pointer",
-    borderBottom: "1px solid #222",
+    borderBottom: "1px solid var(--border)",
     width: "100%",
-    transition: "background 0.2s",
   },
   avatar: {
     width: 80,
@@ -43,15 +45,16 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: 4,
+    minWidth: 0,
   },
   name: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#fff",
+    fontWeight: 600,
+    color: "var(--text)",
   },
   desc: {
     fontSize: 13,
-    color: "#aaa",
+    color: "var(--text-muted)",
   },
   badge: {
     fontSize: 11,

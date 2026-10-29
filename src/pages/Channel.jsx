@@ -10,7 +10,7 @@ function HorizontalSection({ title, items }) {
   if (!items?.length) return null;
   return (
     <div style={sec.wrap}>
-      <p style={sec.title}>{title}</p>
+      <h3 style={sec.title}>{title}</h3>
       <div style={sec.row}>
         {items.map((v, i) => v.snippet && (
           <div key={`${v.id?.videoId || i}`} style={sec.card}>
@@ -24,17 +24,18 @@ function HorizontalSection({ title, items }) {
 
 const sec = {
   wrap: { padding: "16px 24px 0" },
-  title: { fontSize: 16, fontWeight: "bold", marginBottom: 12, color: "var(--text)" },
+  title: { fontSize: 17, fontWeight: 600, marginBottom: 12, color: "var(--text)" },
   row: { display: "flex", gap: 16, overflowX: "auto", paddingBottom: 16, scrollbarWidth: "thin" },
   card: { flexShrink: 0, width: 280 },
 };
 
-const isShort = (v) =>
-  v.snippet?.title?.toLowerCase().includes("#shorts") ||
-  v.snippet?.description?.toLowerCase().includes("#shorts");
-
-export default function Channel() {
+// Remount the page whenever the channel changes so all tab state starts fresh.
+export default function ChannelPage() {
   const { id } = useParams();
+  return <Channel key={id} id={id} />;
+}
+
+function Channel({ id }) {
   const navigate = useNavigate();
   const { user, toggleSubscription, isSubscribed } = useAuth();
   const [channel, setChannel] = useState(null);
@@ -47,7 +48,6 @@ export default function Channel() {
   const [homeLive, setHomeLive] = useState([]);
   const [homePlaylists, setHomePlaylists] = useState([]);
   const [videos, setVideos] = useState([]);
-  const [shorts, setShorts] = useState([]);
   const [liveVideos, setLiveVideos] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -61,7 +61,7 @@ export default function Channel() {
       setLoading(true);
       try {
         const cRes = await getChannelDetails(id);
-        setChannel(cRes.data.items[0]);
+        setChannel(cRes.data.items?.[0] || null);
         const [vRes, lRes, pRes] = await Promise.allSettled([
           getChannelVideos(id, ""),
           getChannelLive(id, ""),
@@ -79,23 +79,17 @@ export default function Channel() {
   const fetchTabData = useCallback(async (pageToken = "", reset = false) => {
     if (reset) setTabLoading(true); else setLoadingMore(true);
     try {
-      let items = [], token = "";
+      let token = "";
 
       if (activeTab === "Videos") {
         const res = await getChannelVideos(id, pageToken);
-        items = res.data.items.filter((v) => v.snippet);
+        const items = res.data.items.filter((v) => v.snippet);
         token = res.data.nextPageToken || "";
         if (reset) setVideos(items); else setVideos((p) => [...p, ...items]);
 
-      } else if (activeTab === "Shorts") {
-        const res = await getChannelVideos(id, pageToken);
-        items = res.data.items.filter((v) => v.snippet && isShort(v));
-        token = res.data.nextPageToken || "";
-        if (reset) setShorts(items); else setShorts((p) => [...p, ...items]);
-
       } else if (activeTab === "Live") {
         const res = await getChannelLive(id, pageToken);
-        items = res.data.items.filter((v) => v.snippet);
+        const items = res.data.items.filter((v) => v.snippet);
         token = res.data.nextPageToken || "";
         if (reset) setLiveVideos(items); else setLiveVideos((p) => [...p, ...items]);
 
@@ -114,7 +108,7 @@ export default function Channel() {
     nextPageTokenRef.current = "";
     loadingMoreRef.current = false;
     if (activeTab !== "Home") fetchTabData("", true);
-  }, [activeTab]);
+  }, [activeTab, fetchTabData]);
 
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
@@ -135,30 +129,32 @@ export default function Channel() {
     return () => observerRef.current?.disconnect();
   }, [fetchTabData, activeTab]);
 
-  if (loading) return <div className="page-content"><p style={styles.msg}>Loading...</p></div>;
-  if (!channel) return <div className="page-content"><p style={styles.msg}>Channel not found</p></div>;
+  if (loading) return <div className="page-content"><p style={styles.msg}>Loading…</p></div>;
+  if (!channel) return <div className="page-content"><p style={styles.msg}>Channel not found.</p></div>;
 
   const { snippet, statistics } = channel;
   const bannerUrl = channel.brandingSettings?.image?.bannerExternalUrl;
 
+  const PlaylistCard = ({ p }) => (
+    <div style={styles.playlistCard} onClick={() => navigate(`/playlist/${p.id}`)}>
+      <img src={p.snippet.thumbnails?.medium?.url} alt="" style={styles.playlistThumb} />
+      <p style={styles.playlistTitle}>{p.snippet.title}</p>
+      <p style={styles.playlistCount}>{p.contentDetails?.itemCount} videos</p>
+    </div>
+  );
+
   const renderContent = () => {
-    if (tabLoading) return <p style={styles.msg}>Loading...</p>;
+    if (tabLoading) return <p style={styles.msg}>Loading…</p>;
 
     if (activeTab === "Home") return (
       <div>
-        {homeLive.length > 0 && <HorizontalSection title="🔴 Live" items={homeLive} />}
-        <HorizontalSection title="Latest Videos" items={homeVideos} />
+        {homeLive.length > 0 && <HorizontalSection title="Live" items={homeLive} />}
+        <HorizontalSection title="Latest videos" items={homeVideos} />
         {homePlaylists.length > 0 && (
           <div style={sec.wrap}>
-            <p style={sec.title}>Playlists</p>
+            <h3 style={sec.title}>Playlists</h3>
             <div style={sec.row}>
-              {homePlaylists.map((p) => (
-                <div key={p.id} style={styles.playlistCard} onClick={() => navigate(`/playlist/${p.id}`)}>
-                  <img src={p.snippet.thumbnails?.medium?.url} alt="" style={styles.playlistThumb} />
-                  <p style={styles.playlistTitle}>{p.snippet.title}</p>
-                  <p style={styles.playlistCount}>{p.contentDetails?.itemCount} videos</p>
-                </div>
-              ))}
+              {homePlaylists.map((p) => <PlaylistCard key={p.id} p={p} />)}
             </div>
           </div>
         )}
@@ -168,14 +164,8 @@ export default function Channel() {
     if (activeTab === "Playlists") return (
       <div style={styles.playlistGrid}>
         {playlists.length === 0
-          ? <p style={styles.msg}>No Playlists found</p>
-          : playlists.map((p) => (
-            <div key={p.id} style={styles.playlistCard} onClick={() => navigate(`/playlist/${p.id}`)}>
-              <img src={p.snippet.thumbnails?.medium?.url} alt="" style={styles.playlistThumb} />
-              <p style={styles.playlistTitle}>{p.snippet.title}</p>
-              <p style={styles.playlistCount}>{p.contentDetails?.itemCount} videos</p>
-            </div>
-          ))}
+          ? <p style={styles.msg}>This channel has no playlists.</p>
+          : playlists.map((p) => <PlaylistCard key={p.id} p={p} />)}
       </div>
     );
 
@@ -183,12 +173,14 @@ export default function Channel() {
     return (
       <div className="video-grid">
         {data.length === 0
-          ? <p style={styles.msg}>No {activeTab} found</p>
+          ? <p style={styles.msg}>Nothing to show in {activeTab} yet.</p>
           : data.map((v, i) => <VideoCard key={`${v.id?.videoId}-${i}`} video={v} />)
         }
       </div>
     );
   };
+
+  const subscribed = isSubscribed(id);
 
   return (
     <div className="page-content">
@@ -198,7 +190,7 @@ export default function Channel() {
         {bannerUrl ? <img src={bannerUrl} style={styles.bannerImg} alt="" /> : <div style={styles.bannerPlaceholder} />}
       </div>
 
-      <div style={styles.channelInfo}>
+      <div className="channel-info">
         <img src={snippet.thumbnails?.medium?.url} alt={snippet.title} style={styles.avatar} />
         <div style={styles.meta}>
           <h1 style={styles.name}>{snippet.title}</h1>
@@ -211,23 +203,23 @@ export default function Channel() {
             {showFullDesc ? snippet.description : snippet.description?.slice(0, 120)}
             {snippet.description?.length > 120 && (
               <span style={styles.more} onClick={() => setShowFullDesc(!showFullDesc)}>
-                {showFullDesc ? " show less" : " ...more"}
+                {showFullDesc ? " Show less" : " …more"}
               </span>
             )}
           </p>
           <button
             onClick={() => {
-              if (!user) return alert("Login karo pehle!");
+              if (!user) return alert("Please sign in to subscribe.");
               toggleSubscription({
                 id,
                 name: snippet.title,
                 avatar: snippet.thumbnails?.medium?.url,
-                subs: Number(statistics?.subscriberCount).toLocaleString() + " subscribers",
+                subs: `${Number(statistics?.subscriberCount).toLocaleString()} subscribers`,
               });
             }}
-            style={{ ...styles.subBtn, background: isSubscribed(id) ? "#555" : "#fff", color: isSubscribed(id) ? "#fff" : "#000" }}
+            style={{ ...styles.subBtn, background: subscribed ? "#555" : "var(--text)", color: subscribed ? "#fff" : "var(--bg)" }}
           >
-            {isSubscribed(id) ? "✓ Subscribed" : "Subscribe"}
+            {subscribed ? "✓ Subscribed" : "Subscribe"}
           </button>
         </div>
       </div>
@@ -244,7 +236,7 @@ export default function Channel() {
       {renderContent()}
 
       <div ref={bottomRef} style={{ padding: 20, textAlign: "center" }}>
-        {loadingMore && <p style={styles.msg}>Loading more...</p>}
+        {loadingMore && <p style={styles.msg}>Loading more…</p>}
       </div>
     </div>
   );
@@ -255,21 +247,20 @@ const styles = {
   bannerWrap: { width: "100%", height: 200, overflow: "hidden" },
   bannerImg: { width: "100%", height: "100%", objectFit: "cover" },
   bannerPlaceholder: { width: "100%", height: "100%", background: "var(--card-bg)" },
-  channelInfo: { display: "flex", alignItems: "flex-start", gap: 20, padding: "20px 24px" },
   avatar: { width: 90, height: 90, borderRadius: "50%", flexShrink: 0 },
   meta: { flex: 1 },
-  name: { fontSize: 22, fontWeight: "bold", marginBottom: 6, color: "var(--text)" },
+  name: { fontSize: 24, fontWeight: 600, marginBottom: 6, color: "var(--text)" },
   stats: { fontSize: 13, color: "var(--text-muted)", marginBottom: 6 },
-  desc: { fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 12 },
-  more: { color: "#3ea6ff", cursor: "pointer" },
-  subBtn: { padding: "8px 20px", borderRadius: 20, border: "none", fontWeight: "bold", fontSize: 13, cursor: "pointer" },
+  desc: { fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55, marginBottom: 12 },
+  more: { color: "#3ea6ff", cursor: "pointer", fontWeight: 600 },
+  subBtn: { padding: "8px 20px", borderRadius: 20, border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer" },
   tabs: { display: "flex", gap: 0, padding: "0 20px", borderBottom: "1px solid var(--border)", overflowX: "auto" },
   tab: { background: "none", border: "none", borderBottom: "2px solid transparent", color: "var(--text-muted)", padding: "12px 18px", cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" },
-  activeTab: { color: "var(--text)", borderBottom: "2px solid var(--text)" },
+  activeTab: { color: "var(--text)", borderBottom: "2px solid var(--text)", fontWeight: 600 },
   playlistGrid: { display: "flex", flexWrap: "wrap", gap: 16, padding: 24 },
   playlistCard: { width: 200, cursor: "pointer", flexShrink: 0 },
   playlistThumb: { width: "100%", height: 112, objectFit: "cover", borderRadius: 8 },
-  playlistTitle: { fontSize: 13, fontWeight: "bold", marginTop: 6, color: "var(--text)" },
+  playlistTitle: { fontSize: 13, fontWeight: 600, marginTop: 6, color: "var(--text)" },
   playlistCount: { fontSize: 12, color: "var(--text-muted)" },
   msg: { textAlign: "center", marginTop: 40, color: "var(--text-muted)" },
 };

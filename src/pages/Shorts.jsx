@@ -1,16 +1,10 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getShorts, getShortsByIds } from "../api/youtube";
+import { getShorts, getShortsByIds, getVideoById } from "../api/youtube";
 import { useAuth } from "../context/AuthContext";
+import { toSeconds } from "../utils/duration";
 import { AiOutlineLike, AiFillLike, AiOutlineClose } from "react-icons/ai";
-import { MdShare, MdOutlineSubscriptions, MdPlayArrow, MdPause } from "react-icons/md";
-
-const toSecs = (iso) => {
-  if (!iso) return 999;
-  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!m) return 999;
-  return (parseInt(m[1] || 0) * 3600) + (parseInt(m[2] || 0) * 60) + parseInt(m[3] || 0);
-};
+import { MdShare, MdOutlineSubscriptions, MdPlayArrow } from "react-icons/md";
 
 export default function Shorts() {
   const { id: startId } = useParams();
@@ -40,12 +34,11 @@ export default function Shorts() {
       const ids = (res.data.items || []).map((v) => v.id?.videoId).filter(Boolean);
       if (ids.length) {
         const details = await getShortsByIds(ids);
-        const filtered = (details.data.items || []).filter((v) => toSecs(v.contentDetails?.duration) <= 180);
+        const filtered = (details.data.items || []).filter((v) => toSeconds(v.contentDetails?.duration) <= 180);
         if (reset && startId) {
           const idx = filtered.findIndex((v) => v.id === startId);
           if (idx > 0) { filtered.unshift(...filtered.splice(idx, 1)); }
           else if (idx < 0) {
-            const { getVideoById } = await import("../api/youtube");
             const vRes = await getVideoById(startId);
             const startVideo = vRes.data.items?.[0];
             if (startVideo) filtered.unshift(startVideo);
@@ -57,7 +50,7 @@ export default function Shorts() {
     finally { fetchingRef.current = false; if (reset) setLoading(false); }
   }, [startId]);
 
-  useEffect(() => { setLoading(true); fetchMore(true); }, []);
+  useEffect(() => { setLoading(true); fetchMore(true); }, [fetchMore]);
 
   useEffect(() => {
     if (!startId || scrolledRef.current || shorts.length === 0) return;
@@ -106,12 +99,12 @@ export default function Shorts() {
   };
 
   const handleLike = (v) => {
-    if (!user) return alert("Login karo!");
+    if (!user) return alert("Please sign in to like videos.");
     toggleLiked({ id: v.id, title: v.snippet.title, thumb: v.snippet.thumbnails?.medium?.url, channel: v.snippet.channelTitle });
   };
 
   const handleSubscribe = (v) => {
-    if (!user) return alert("Login karo!");
+    if (!user) return alert("Please sign in to subscribe.");
     toggleSubscription({ id: v.snippet.channelId, name: v.snippet.channelTitle, avatar: v.snippet.thumbnails?.default?.url });
   };
 
@@ -122,12 +115,12 @@ export default function Shorts() {
   };
 
   if (loading) return (
-    <div style={s.loadWrap}><p style={s.loadMsg}>Loading Shorts...</p></div>
+    <div style={s.loadWrap}><p style={s.loadMsg}>Loading Shorts…</p></div>
   );
 
   return (
     <div style={s.page}>
-      <button style={s.closeBtn} onClick={() => navigate(-1)}>
+      <button style={s.closeBtn} onClick={() => navigate(-1)} aria-label="Close Shorts">
         <AiOutlineClose size={22} color="#fff" />
       </button>
 
@@ -150,7 +143,6 @@ export default function Shorts() {
                       allowFullScreen
                       title={v.snippet.title}
                     />
-                    {/* Tap overlay for pause/play */}
                     <div style={s.tapOverlay} onClick={() => handleTap(v.id)}>
                       {paused && (
                         <div style={s.pauseIcon}>
@@ -184,11 +176,11 @@ export default function Shorts() {
                   </button>
                   <button style={s.actionBtn} onClick={() => handleShare(v)}>
                     <MdShare size={26} color="#fff" />
-                    <span style={s.actionLabel}>{copied === v.id ? "Copied!" : "Share"}</span>
+                    <span style={s.actionLabel}>{copied === v.id ? "Copied" : "Share"}</span>
                   </button>
                   <button style={s.actionBtn} onClick={() => handleSubscribe(v)}>
                     <MdOutlineSubscriptions size={26} color={subbed ? "#ff0000" : "#fff"} />
-                    <span style={s.actionLabel}>{subbed ? "Subbed" : "Sub"}</span>
+                    <span style={s.actionLabel}>{subbed ? "Subscribed" : "Subscribe"}</span>
                   </button>
                 </div>
               </div>
@@ -235,7 +227,7 @@ const s = {
     pointerEvents: "none",
   },
   info: { pointerEvents: "all" },
-  channelName: { fontSize: 14, fontWeight: "bold", color: "#fff", marginBottom: 4, cursor: "pointer" },
+  channelName: { fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 4, cursor: "pointer" },
   title: { fontSize: 13, color: "#eee", lineHeight: 1.4, marginBottom: 4 },
   views: { fontSize: 12, color: "#bbb" },
   actions: {

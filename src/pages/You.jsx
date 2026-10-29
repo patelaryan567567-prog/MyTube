@@ -2,47 +2,28 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { AiOutlineClockCircle } from "react-icons/ai";
-import { MdThumbUp } from "react-icons/md";
+import { MdThumbUp, MdClose, MdSubscriptions } from "react-icons/md";
+import VideoList from "../components/VideoList";
+import SignInNotice from "../components/SignInNotice";
 
-const TABS = ["Watch Later", "Liked Videos"];
+const TABS = ["Watch Later", "Liked videos"];
 
 export default function You() {
-  const { user, watchLater, likedVideos, toggleWatchLater, toggleLiked } = useAuth();
+  const { user, watchLater, likedVideos, subscriptions, toggleWatchLater, toggleLiked } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState("Watch Later");
+  const [tab, setTab] = useState(TABS[0]);
 
-  if (!user) return (
-    <div className="page-content" style={s.center}>
-      <div style={s.loginBox}>
-        <p style={s.loginTitle}>Sign in to see your content</p>
-        <p style={s.loginSub}>Liked videos and watch later will appear here.</p>
-      </div>
-    </div>
-  );
-
-  const renderVideoList = (items, onRemove, removeLabel) => (
-    items.length === 0
-      ? <p style={s.empty}>Nothing here yet.</p>
-      : <div style={s.list}>
-          {items.map((v) => (
-            <div key={v.id} style={s.item}>
-              <div style={s.thumbWrap} onClick={() => navigate(`/watch/${v.id}`)}>
-                <img src={v.thumb} alt={v.title} style={s.thumb} />
-                {v.duration && <span style={s.dur}>{v.duration}</span>}
-              </div>
-              <div style={s.info}>
-                <p style={s.title} onClick={() => navigate(`/watch/${v.id}`)}>{v.title}</p>
-                <p style={s.channel}>{v.channel}</p>
-              </div>
-              <button style={s.removeBtn} onClick={() => onRemove(v)}>{removeLabel}</button>
-            </div>
-          ))}
-        </div>
-  );
+  if (!user) {
+    return (
+      <SignInNotice
+        title="Sign in to see your library"
+        subtitle="Your liked videos, Watch Later list and subscriptions will appear here."
+      />
+    );
+  }
 
   return (
     <div className="page-content" style={s.wrap}>
-      {/* User header */}
       <div style={s.header}>
         <img src={user.picture} alt={user.name} style={s.avatar} />
         <div>
@@ -51,21 +32,24 @@ export default function You() {
         </div>
       </div>
 
-      {/* Quick stats */}
       <div style={s.stats}>
-        <div style={s.statCard} onClick={() => setTab("Watch Later")}>
+        <button style={s.statCard} onClick={() => setTab(TABS[0])}>
           <AiOutlineClockCircle size={22} color="#3ea6ff" />
           <p style={s.statNum}>{watchLater.length}</p>
           <p style={s.statLabel}>Watch Later</p>
-        </div>
-        <div style={s.statCard} onClick={() => setTab("Liked Videos")}>
+        </button>
+        <button style={s.statCard} onClick={() => setTab(TABS[1])}>
           <MdThumbUp size={22} color="#ff6b6b" />
           <p style={s.statNum}>{likedVideos.length}</p>
           <p style={s.statLabel}>Liked</p>
-        </div>
+        </button>
+        <button style={s.statCard} onClick={() => navigate("/subscriptions")}>
+          <MdSubscriptions size={22} color="#8e7cff" />
+          <p style={s.statNum}>{subscriptions.length}</p>
+          <p style={s.statLabel}>Subscriptions</p>
+        </button>
       </div>
 
-      {/* Tabs */}
       <div style={s.tabs}>
         {TABS.map((t) => (
           <button key={t} style={{ ...s.tabBtn, ...(tab === t ? s.activeTab : {}) }} onClick={() => setTab(t)}>
@@ -74,41 +58,40 @@ export default function You() {
         ))}
       </div>
 
-      {/* Content */}
-      <div style={s.content}>
-        {tab === "Watch Later" && renderVideoList(watchLater, toggleWatchLater, "✕")}
-        {tab === "Liked Videos" && renderVideoList(likedVideos, toggleLiked, "👍")}
-      </div>
+      {tab === TABS[0] ? (
+        <VideoList
+          items={watchLater}
+          onRemove={toggleWatchLater}
+          removeIcon={<MdClose size={20} />}
+          removeTitle="Remove from Watch Later"
+          emptyTitle="Your Watch Later list is empty"
+          emptyText="Save videos to watch them whenever you're ready."
+        />
+      ) : (
+        <VideoList
+          items={likedVideos}
+          onRemove={toggleLiked}
+          removeIcon={<MdThumbUp size={20} color="#3ea6ff" />}
+          removeTitle="Remove from liked videos"
+          emptyTitle="No liked videos yet"
+          emptyText="Tap the like button on a video and it will show up here."
+        />
+      )}
     </div>
   );
 }
 
 const s = {
-  wrap:       { padding: "20px 16px", maxWidth: 800, margin: "0 auto" },
-  center:     { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" },
-  loginBox:   { textAlign: "center", padding: 32 },
-  loginTitle: { fontSize: 20, fontWeight: "bold", color: "var(--text)", marginBottom: 8 },
-  loginSub:   { fontSize: 14, color: "var(--text-muted)" },
-  header:     { display: "flex", alignItems: "center", gap: 16, marginBottom: 24, padding: "16px", background: "var(--card-bg)", borderRadius: 16 },
-  avatar:     { width: 64, height: 64, borderRadius: "50%", objectFit: "cover" },
-  name:       { fontSize: 18, fontWeight: "bold", color: "var(--text)", marginBottom: 2 },
-  email:      { fontSize: 13, color: "var(--text-muted)" },
-  stats:      { display: "flex", gap: 12, marginBottom: 20 },
-  statCard:   { flex: 1, background: "var(--card-bg)", borderRadius: 14, padding: "16px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: "pointer" },
-  statNum:    { fontSize: 22, fontWeight: "bold", color: "var(--text)" },
-  statLabel:  { fontSize: 11, color: "var(--text-muted)", textAlign: "center" },
-  tabs:       { display: "flex", gap: 0, borderBottom: "1px solid var(--border)", marginBottom: 16 },
-  tabBtn:     { background: "none", border: "none", borderBottom: "2px solid transparent", color: "var(--text-muted)", padding: "10px 18px", cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" },
-  activeTab:  { color: "var(--text)", borderBottom: "2px solid var(--text)", fontWeight: "600" },
-  content:    {},
-  empty:      { textAlign: "center", color: "var(--text-muted)", padding: "40px 0", fontSize: 14 },
-  list:       { display: "flex", flexDirection: "column", gap: 10 },
-  item:       { display: "flex", gap: 12, alignItems: "center", background: "var(--card-bg)", borderRadius: 10, padding: 10 },
-  thumbWrap:  { position: "relative", flexShrink: 0, cursor: "pointer" },
-  thumb:      { width: 140, height: 80, objectFit: "cover", borderRadius: 8, display: "block" },
-  dur:        { position: "absolute", bottom: 4, right: 4, background: "rgba(0,0,0,0.85)", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "2px 5px", borderRadius: 4 },
-  info:       { flex: 1, minWidth: 0 },
-  title:      { fontSize: 14, fontWeight: "600", color: "var(--text)", cursor: "pointer", marginBottom: 4, lineHeight: 1.4 },
-  channel:    { fontSize: 12, color: "var(--text-muted)" },
-  removeBtn:  { background: "none", border: "none", fontSize: 16, cursor: "pointer", padding: "4px 8px", flexShrink: 0, color: "var(--text-muted)" },
+  wrap:      { padding: "20px 16px", maxWidth: 800, margin: "0 auto" },
+  header:    { display: "flex", alignItems: "center", gap: 16, marginBottom: 24, padding: 16, background: "var(--card-bg)", borderRadius: 16, border: "1px solid var(--border)" },
+  avatar:    { width: 64, height: 64, borderRadius: "50%", objectFit: "cover" },
+  name:      { fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 2 },
+  email:     { fontSize: 13, color: "var(--text-muted)" },
+  stats:     { display: "flex", gap: 12, marginBottom: 20 },
+  statCard:  { flex: 1, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 14, padding: "16px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: "pointer", color: "var(--text)" },
+  statNum:   { fontSize: 22, fontWeight: 700, color: "var(--text)" },
+  statLabel: { fontSize: 12, color: "var(--text-muted)", textAlign: "center" },
+  tabs:      { display: "flex", borderBottom: "1px solid var(--border)", marginBottom: 16 },
+  tabBtn:    { background: "none", border: "none", borderBottom: "2px solid transparent", color: "var(--text-muted)", padding: "10px 18px", cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" },
+  activeTab: { color: "var(--text)", borderBottom: "2px solid var(--text)", fontWeight: 600 },
 };

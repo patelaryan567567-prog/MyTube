@@ -3,13 +3,7 @@ import { getTrending, getVideosByCategory, getShorts, getShortsByIds } from "../
 import VideoCard from "../components/VideoCard";
 import CategoryBar from "../components/CategoryBar";
 import { useNavigate } from "react-router-dom";
-
-const toSecs = (iso) => {
-  if (!iso) return 999;
-  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!m) return 999;
-  return (parseInt(m[1]||0)*3600)+(parseInt(m[2]||0)*60)+parseInt(m[3]||0);
-};
+import { toSeconds } from "../utils/duration";
 
 export default function Home() {
   const [videos, setVideos]       = useState([]);
@@ -23,7 +17,7 @@ export default function Home() {
   const bottomRef    = useRef(null);
   const navigate     = useNavigate();
 
-  // Fetch shorts separately
+  // Fetch the Shorts shelf separately
   useEffect(() => {
     (async () => {
       try {
@@ -31,7 +25,7 @@ export default function Home() {
         const ids = (res.data.items || []).map((v) => v.id?.videoId).filter(Boolean);
         if (!ids.length) return;
         const details = await getShortsByIds(ids);
-        const filtered = (details.data.items || []).filter((v) => toSecs(v.contentDetails?.duration) <= 60);
+        const filtered = (details.data.items || []).filter((v) => toSeconds(v.contentDetails?.duration) <= 60);
         setShorts(filtered.slice(0, 16));
       } catch (e) { console.error(e); }
     })();
@@ -59,7 +53,7 @@ export default function Home() {
     fetchVideos("", true);
   };
 
-  useEffect(() => { fetchVideos("", true); }, []);
+  useEffect(() => { fetchVideos("", true); }, [fetchVideos]);
 
   useEffect(() => {
     if (!bottomRef.current) return;
@@ -78,13 +72,12 @@ export default function Home() {
     <div className="page-content">
       <CategoryBar onSelect={handleCategorySelect} />
       {loading ? (
-        <p style={s.msg}>Loading...</p>
+        <p style={s.msg}>Loading…</p>
       ) : (
         <>
-          {/* Shorts Section */}
           {shorts.length > 0 && (
             <div style={s.shortsWrap}>
-              <p style={s.shortsTitle}>⚡ Shorts</p>
+              <h3 style={s.shortsTitle}>Shorts</h3>
               <div style={s.shortsRow}>
                 {shorts.map((v) => {
                   const vid = v.id?.videoId || v.id;
@@ -107,7 +100,7 @@ export default function Home() {
             {videos.map((v) => <VideoCard key={v.id} video={v} />)}
           </div>
           <div ref={bottomRef} style={s.bottom}>
-            {loadingMore && <p style={s.msg}>Loading more...</p>}
+            {loadingMore && <p style={s.msg}>Loading more…</p>}
           </div>
         </>
       )}
@@ -116,10 +109,10 @@ export default function Home() {
 }
 
 const s = {
-  msg: { textAlign: "center", marginTop: 40, color: "#aaa" },
+  msg: { textAlign: "center", marginTop: 40, color: "var(--text-muted)" },
   bottom: { marginTop: 20, textAlign: "center" },
   shortsWrap: { padding: "12px 20px 0" },
-  shortsTitle: { fontSize: 16, fontWeight: "bold", color: "var(--text)", marginBottom: 10 },
+  shortsTitle: { fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 10 },
   shortsRow: { display: "flex", gap: 10, overflowX: "auto", paddingBottom: 12, scrollbarWidth: "thin" },
   shortCard: { flexShrink: 0, width: 120, cursor: "pointer" },
   shortThumb: { width: 120, height: 200, objectFit: "cover", borderRadius: 10, display: "block" },
