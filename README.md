@@ -1,63 +1,78 @@
 # MyTube
 
-A fast, clean YouTube-style client built with React 19 and Vite. It runs entirely in the browser and uses the YouTube Data API v3 for content and Google Sign-In for accounts.
+MyTube is a YouTube-style single-page client built with React 19 and Vite. It obtains public video, channel, playlist, and comment data from YouTube Data API v3, embeds YouTube videos, and provides a browser-local library with Google sign-in UI.
 
 ## Features
 
-- **Home**: category filters, a Shorts shelf and an infinite-scroll feed of popular videos
-- **Watch**: embedded player, like, Watch Later, share and subscribe, clickable timestamps, comments and an "Up next" list
-- **Search**: videos and channels with search suggestions and recent searches
-- **Channel**: Home, Videos, Live and Playlists tabs
-- **Shorts**: full-screen vertical feed
-- **Trending**: popular videos by country
-- **Library**: Watch Later, liked videos and subscriptions, saved in your browser
-- **Light and dark themes**
+- Home feed of popular videos for India, category filtering, infinite scroll, and a Shorts shelf limited to videos up to 60 seconds.
+- Video watch pages with embedded playback, related videos, timestamps, comments, sharing, likes, Watch Later, and channel subscription controls.
+- Search with suggestions and recent searches; channel pages with Home, Videos, Live, and Playlists tabs.
+- Dedicated Trending, Shorts, Subscriptions, Watch Later, Liked Videos, Playlist, and “You” routes.
+- Google OAuth client integration, plus light and dark themes.
+- In-memory API-response caching and automatic API-key failover on YouTube quota errors.
 
-## Getting started
+## Technology
+
+- React 19, React Router 7, Vite 8, Axios, and React Icons.
+- `@react-oauth/google` and `jwt-decode` for the sign-in experience.
+- ESLint for linting and Netlify configuration for SPA hosting.
+
+## Prerequisites
+
+- A current Node.js LTS installation compatible with the dependencies in `package.json`.
+- A Google OAuth web client ID and one or more YouTube Data API v3 keys.
+
+## Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Create a `.env` file in the project root:
+Create `.env` in the project root before starting the app:
 
 ```env
-VITE_GOOGLE_CLIENT_ID=your-google-oauth-client-id
-VITE_API_HOME=your-youtube-api-key
-VITE_API_SEARCH=your-youtube-api-key
-VITE_API_VIDEO=your-youtube-api-key
-# Optional extra keys, used automatically when another key runs out of quota:
-# VITE_API_EXTRA, VITE_API_EXTRA2 ... VITE_API_EXTRA7
+VITE_GOOGLE_CLIENT_ID=your_google_oauth_web_client_id
+VITE_API_HOME=your_youtube_data_api_key
+VITE_API_SEARCH=your_youtube_data_api_key
+VITE_API_VIDEO=your_youtube_data_api_key
+
+# Optional quota fallbacks (up to seven additional keys)
+VITE_API_EXTRA=your_youtube_data_api_key
+VITE_API_EXTRA2=your_youtube_data_api_key
+# …through VITE_API_EXTRA7
 ```
 
-When one key reaches its daily quota, the app switches to the next one automatically.
+The API client starts each request type with its dedicated key and tries the remaining defined keys after a `quotaExceeded` or `dailyLimitExceeded` response. Other API failures are surfaced to the UI/console instead of being retried across keys.
 
-## Scripts
+## Commands
 
-| Command           | What it does                       |
-| ----------------- | ---------------------------------- |
-| `npm run dev`     | Start the development server       |
-| `npm run build`   | Create a production build          |
-| `npm run preview` | Preview the production build       |
-| `npm run lint`    | Check the code with ESLint         |
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Vite development server. |
+| `npm run build` | Create the production bundle. |
+| `npm run preview` | Serve the built bundle locally. |
+| `npm run lint` | Run ESLint over the repository. |
 
 ## Project structure
 
-```
+```text
 src/
-  api/          YouTube API client with key rotation and caching
-  components/   Navbar, VideoCard, VideoList, ChannelCard, CategoryBar, ...
-  context/      Auth (user, library) and theme providers
-  pages/        One file per route
-  utils/        Shared helpers (duration formatting)
+  api/          YouTube Data API client and key rotation
+  components/   Navigation and reusable cards
+  context/      Theme and browser-local library state
+  pages/        Route-level views
+  utils/        Shared helpers
+public/         Favicons and SVG icon assets
 ```
 
 ## Deployment
 
-The project is set up for Netlify. Add the environment variables above in **Site settings → Environment variables**. `netlify.toml` already routes every path to `index.html` so client-side routing works.
+`netlify.toml` configures Netlify to serve `index.html` for every route, which is required by the browser router. Add the `VITE_*` variables in the hosting provider’s build environment, build with `npm run build`, and publish Vite’s output directory (`dist`).
 
-## Notes
+## Important limitations
 
-- Your library (likes, Watch Later, subscriptions) and any comments you post are stored in your browser's local storage. They are not synced to YouTube.
-- Variables prefixed with `VITE_` are included in the browser bundle. Restrict each API key to your site's domain in the Google Cloud Console.
+- All `VITE_*` values are embedded in the browser bundle. Restrict YouTube keys by referrer/API in Google Cloud; do not use a server secret as a `VITE_*` variable.
+- Likes, subscriptions, Watch Later, theme, user profile, recent searches, and locally posted comments are stored in `localStorage`; they are not written to a YouTube account or synchronized across browsers.
+- Data availability, rate limits, search results, and playback depend on YouTube and the supplied API keys.
+
