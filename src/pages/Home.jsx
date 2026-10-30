@@ -4,6 +4,20 @@ import VideoCard from "../components/VideoCard";
 import CategoryBar from "../components/CategoryBar";
 import { useNavigate } from "react-router-dom";
 import { toSeconds } from "../utils/duration";
+import { useAuth } from "../context/AuthContext";
+import useSubscriptionFeed from "../hooks/useSubscriptionFeed";
+
+function FeedSection({ title, items }) {
+  if (!items.length) return null;
+  return (
+    <div style={s.feedWrap}>
+      <h3 style={s.feedTitle}>{title}</h3>
+      <div className="video-grid" style={s.feedGrid}>
+        {items.map((v) => <VideoCard key={v.id} video={v} />)}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [videos, setVideos]       = useState([]);
@@ -16,6 +30,9 @@ export default function Home() {
   const observerRef  = useRef(null);
   const bottomRef    = useRef(null);
   const navigate     = useNavigate();
+  const { user, subscriptions } = useAuth();
+  const { latest: latestFromSubs, popular: popularFromSubs } =
+    useSubscriptionFeed(subscriptions, Boolean(user) && subscriptions.length > 0);
 
   // Fetch the Shorts shelf separately
   useEffect(() => {
@@ -75,6 +92,9 @@ export default function Home() {
         <p style={s.msg}>Loading…</p>
       ) : (
         <>
+          <FeedSection title="Latest from your subscriptions" items={latestFromSubs} />
+          <FeedSection title="Popular with your subscriptions" items={popularFromSubs} />
+
           {shorts.length > 0 && (
             <div style={s.shortsWrap}>
               <h3 style={s.shortsTitle}>Shorts</h3>
@@ -111,6 +131,9 @@ export default function Home() {
 const s = {
   msg: { textAlign: "center", marginTop: 40, color: "var(--text-muted)" },
   bottom: { marginTop: 20, textAlign: "center" },
+  feedWrap: { padding: "12px 20px 0" },
+  feedTitle: { fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 4 },
+  feedGrid: { padding: "8px 0 4px", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" },
   shortsWrap: { padding: "12px 20px 0" },
   shortsTitle: { fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 10 },
   shortsRow: { display: "flex", gap: 10, overflowX: "auto", paddingBottom: 12, scrollbarWidth: "thin" },

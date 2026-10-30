@@ -6,8 +6,6 @@ import {
   MdSlowMotionVideo, MdOutlineSlowMotionVideo, MdWhatshot, MdOutlineWhatshot,
 } from "react-icons/md";
 import MyTubeLogo from "./MyTubeLogo";
-import { GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { getSearchSuggestions } from "../api/youtube";
@@ -50,7 +48,7 @@ export default function Navbar() {
   const [isMobile, setIsMobile]         = useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
   const navigate    = useNavigate();
   const location    = useLocation();
-  const { user, setUser } = useAuth();
+  const { user, signIn, signOut, syncing, sessionExpired } = useAuth();
   const { dark, toggleTheme } = useTheme();
   const debounceRef = useRef(null);
   const inputRef    = useRef(null);
@@ -222,18 +220,17 @@ export default function Navbar() {
                   <button style={st.menuItem} onClick={() => goTo("/liked")}><MdThumbUpOffAlt size={16} /> Liked videos</button>
                   <button style={st.menuItem} onClick={() => goTo("/subscriptions")}><MdSubscriptions size={16} /> Subscriptions</button>
                   <button style={st.menuItem} onClick={() => goTo("/trending")}><MdWhatshot size={16} /> Trending</button>
+                  {syncing && <p style={st.syncingNote}>Syncing your subscriptions…</p>}
                   <hr style={st.menuDivider} />
-                  <button style={{ ...st.menuItem, color: "#ff4444" }} onClick={() => { setUser(null); setShowUserMenu(false); }}>Sign out</button>
+                  <button style={{ ...st.menuItem, color: "#ff4444" }} onClick={() => { signOut(); setShowUserMenu(false); }}>Sign out</button>
                 </div>
               )}
             </div>
           ) : (
-            <GoogleLogin
-              onSuccess={(res) => setUser(jwtDecode(res.credential))}
-              onError={() => {}}
-              useOneTap auto_select
-              size={isMobile ? "small" : "medium"}
-            />
+            <div style={st.signInWrap}>
+              {sessionExpired && <span style={st.expiredNote}>Session expired</span>}
+              <button style={st.signInBtn} onClick={() => signIn()}>Sign in</button>
+            </div>
           )}
         </div>
       </nav>
@@ -361,6 +358,10 @@ const st = {
   menuEmail:   { fontSize: 12, color: "var(--text-muted)" },
   menuDivider: { border: "none", borderTop: "1px solid var(--border)", margin: "4px 0" },
   menuItem:    { display: "flex", alignItems: "center", gap: 12, width: "100%", background: "none", border: "none", color: "var(--text)", padding: "12px 16px", cursor: "pointer", fontSize: 14, textAlign: "left" },
+  syncingNote: { fontSize: 11, color: "var(--text-muted)", padding: "0 16px 8px" },
+  signInWrap:  { display: "flex", alignItems: "center", gap: 8 },
+  signInBtn:   { background: "#3ea6ff", border: "none", color: "#000", fontWeight: 600, fontSize: 13, padding: "7px 16px", borderRadius: 18, cursor: "pointer", whiteSpace: "nowrap" },
+  expiredNote: { fontSize: 11, color: "#ff8a4c", whiteSpace: "nowrap" },
   sidebar:     { position: "fixed", top: 56, left: 0, bottom: 0, width: 90, background: "var(--sidebar-bg)", borderRight: "1px solid var(--border)", overflowY: "auto", zIndex: 200, padding: "8px 0", display: "flex", flexDirection: "column", alignItems: "center" },
   youCircle:   { width: 24, height: 24, borderRadius: "50%", background: "var(--hover-bg)", display: "flex", alignItems: "center", justifyContent: "center" },
 };

@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import SignInNotice from "../components/SignInNotice";
 
 export default function Subscriptions() {
-  const { user, subscriptions } = useAuth();
+  const { user, subscriptions, syncing } = useAuth();
   const navigate = useNavigate();
 
   if (!user) {
@@ -18,10 +18,12 @@ export default function Subscriptions() {
   return (
     <div className="page-content" style={styles.wrap}>
       <h2 style={styles.heading}>Subscriptions</h2>
-      {subscriptions.length === 0 ? (
+      {syncing && subscriptions.length === 0 ? (
+        <p style={styles.emptyText}>Loading your subscriptions…</p>
+      ) : subscriptions.length === 0 ? (
         <div style={styles.empty}>
           <p style={styles.emptyTitle}>No subscriptions yet</p>
-          <p style={styles.emptyText}>Channels you subscribe to will appear here.</p>
+          <p style={styles.emptyText}>Channels you subscribe to on YouTube will appear here.</p>
         </div>
       ) : (
         <div style={styles.list}>

@@ -126,3 +126,39 @@ export const getShorts = (pageToken = "") => {
 
 export const getShortsByIds = (ids) =>
   smartGet("/videos", { part: "snippet,statistics,contentDetails", id: ids.join(",") }, VIDEO_KEYS);
+
+// ── Used to build the Home feed from the user's subscriptions ──
+
+/** The most recent uploads from one channel (lightweight: id + date only). */
+export const getChannelUploads = async (channelId, maxResults = 6) => {
+  try {
+    const cKey = "uploads_" + channelId;
+    let uploadsId = cache[cKey];
+    if (!uploadsId) {
+      const cRes = await smartGet("/channels", { part: "contentDetails", id: channelId }, VIDEO_KEYS);
+      uploadsId = cRes.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+      if (!uploadsId) return { data: { items: [] } };
+      cache[cKey] = uploadsId;
+    }
+    const res = await smartGet(
+      "/playlistItems",
+      { part: "contentDetails", playlistId: uploadsId, maxResults },
+      VIDEO_KEYS
+    );
+    return { data: { items: res.data.items || [] } };
+  } catch {
+    // A deleted or private uploads playlist shouldn't break the whole feed.
+    return { data: { items: [] } };
+  }
+};
+
+/** Full video details (snippet, stats, duration) for up to 50 ids at once. */
+export const getVideosByIds = async (ids) => {
+  const out = [];
+  for (let i = 0; i < ids.length; i += 50) {
+    const batch = ids.slice(i, i + 50);
+    const res = await smartGet("/videos", { part: "snippet,statistics,contentDetails", id: batch.join(",") }, VIDEO_KEYS);
+    out.push(...(res.data.items || []));
+  }
+  return out;
+};

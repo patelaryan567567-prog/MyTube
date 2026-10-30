@@ -46,7 +46,7 @@ const ds = {
 export default function Watch() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, toggleSubscription, isSubscribed, toggleWatchLater, isWatchLater, toggleLiked, isLiked } = useAuth();
+  const { user, toggleSubscription, isSubscribed, toggleWatchLater, isWatchLater, toggleLiked, isLiked, loadRating } = useAuth();
 
   const [video, setVideo]                       = useState(null);
   const [notFound, setNotFound]                 = useState(false);
@@ -92,6 +92,9 @@ export default function Watch() {
 
     return () => { cancelled = true; };
   }, [id]);
+
+  // The loaded likes list only covers the most recent ones, so check this video directly.
+  useEffect(() => { loadRating(id); }, [id, loadRating]);
 
   const loadMoreComments = async () => {
     if (!commentsNextPage || loadingMore) return;
