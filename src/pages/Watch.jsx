@@ -1,16 +1,52 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getVideoById, getRelatedVideos, getVideoComments } from "../api/youtube";
 import { useAuth } from "../context/AuthContext";
 import VideoCard from "../components/VideoCard";
-import { formatDuration } from "../utils/duration";
+import { formatDuration, toSeconds } from "../utils/duration";
 import { AiOutlineLike, AiFillLike, AiOutlineClockCircle, AiFillClockCircle } from "react-icons/ai";
-import { MdOutlineSubscriptions, MdShare } from "react-icons/md";
+import { MdOutlineSubscriptions, MdShare, MdLink } from "react-icons/md";
 
 const commentsKey = (id) => `mytube_comments_${id}`;
 const loadLocalComments = (id) => {
   try { return JSON.parse(localStorage.getItem(commentsKey(id))) || []; } catch { return []; }
 };
+
+// ── Resume playback: remember roughly where the user stopped watching ──
+const progressKey = (id) => `mytube_progress_${id}`;
+const readProgress = (id) => {
+  try { return JSON.parse(localStorage.getItem(progressKey(id))); } catch { return null; }
+};
+const writeProgress = (id, seconds) => {
+  try { localStorage.setItem(progressKey(id), JSON.stringify({ t: Math.floor(seconds) })); } catch { /* storage unavailable */ }
+};
+const clearProgress = (id) => {
+  try { localStorage.removeItem(progressKey(id)); } catch { /* storage unavailable */ }
+};
+
+// ── YouTube IFrame Player API: loaded once and shared by every Watch mount ──
+let ytApiPromise = null;
+const loadYouTubeIframeAPI = () => {
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise((resolve) => {
+    const prevReady = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      prevReady?.();
+      resolve(window.YT);
+    };
+    if (!document.getElementById("youtube-iframe-api")) {
+      const tag = document.createElement("script");
+      tag.id = "youtube-iframe-api";
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+    }
+  });
+  return ytApiPromise;
+};
+
+const PLAYER_STATE_ENDED = 0;
+const PLAYER_STATE_PLAYING = 1;
 
 // YouTube returns comment text as HTML; convert it to plain text safely.
 const htmlToText = (html = "") => {
@@ -57,7 +93,10 @@ export default function Watch() {
   const [commentsLoading, setCommentsLoading]   = useState(false);
   const [commentsNextPage, setCommentsNextPage] = useState("");
   const [loadingMore, setLoadingMore]           = useState(false);
-  const [copied, setCopied]                     = useState(false);
+  const [copied, setCopied]                     = useState("");
+
+  const iframeRef = useRef(null);
+  const playerRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,6 +135,63 @@ export default function Watch() {
   // The loaded likes list only covers the most recent ones, so check this video directly.
   useEffect(() => { loadRating(id); }, [id, loadRating]);
 
+  // Attach the YouTube IFrame Player API to the embed once it's in the DOM,
+  // so keyboard shortcuts, playback resume and timestamp sharing all work.
+  useEffect(() => {
+    if (!video) return;
+    let cancelled = false;
+    let saveInterval = null;
+
+    loadYouTubeIframeAPI().then((YT) => {
+      if (cancelled || !iframeRef.current) return;
+      playerRef.current = new YT.Player(iframeRef.current, {
+        events: {
+          onReady: () => {
+            saveInterval = setInterval(() => {
+              const t = playerRef.current?.getCurrentTime?.();
+              if (typeof t === "number" && t > 0) writeProgress(id, t);
+            }, 5000);
+          },
+          onStateChange: (e) => {
+            if (e.data === PLAYER_STATE_ENDED) clearProgress(id);
+          },
+        },
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      if (saveInterval) clearInterval(saveInterval);
+      try { playerRef.current?.destroy?.(); } catch { /* already gone */ }
+      playerRef.current = null;
+    };
+  }, [id, video]);
+
+  // Keyboard shortcuts: space/k play-pause, arrows seek, m mute — ignored while typing.
+  useEffect(() => {
+    const handleKey = (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || e.ctrlKey || e.metaKey || e.altKey) return;
+      const player = playerRef.current;
+      if (!player?.getPlayerState) return;
+
+      if (e.key === " " || e.key === "k") {
+        e.preventDefault();
+        player.getPlayerState() === PLAYER_STATE_PLAYING ? player.pauseVideo() : player.playVideo();
+      } else if (e.key === "ArrowRight" || e.key === "l") {
+        e.preventDefault();
+        player.seekTo(player.getCurrentTime() + (e.key === "l" ? 10 : 5), true);
+      } else if (e.key === "ArrowLeft" || e.key === "j") {
+        e.preventDefault();
+        player.seekTo(Math.max(player.getCurrentTime() - (e.key === "j" ? 10 : 5), 0), true);
+      } else if (e.key === "m") {
+        player.isMuted() ? player.unMute() : player.mute();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+
   const loadMoreComments = async () => {
     if (!commentsNextPage || loadingMore) return;
     setLoadingMore(true);
@@ -109,7 +205,13 @@ export default function Watch() {
 
   const handleShare = () => {
     navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${id}`);
-    setCopied(true); setTimeout(() => setCopied(false), 2000);
+    setCopied("link"); setTimeout(() => setCopied(""), 2000);
+  };
+
+  const handleShareAtTime = () => {
+    const t = Math.floor(playerRef.current?.getCurrentTime?.() || 0);
+    navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${id}&t=${t}s`);
+    setCopied("time"); setTimeout(() => setCopied(""), 2000);
   };
 
   const savedVideo = () => ({
@@ -162,14 +264,26 @@ export default function Watch() {
   const wl = isWatchLater(id);
   const liked = isLiked(id);
 
+  // Resume near where the user left off, unless they already finished the video.
+  const durationSec = toSeconds(video.contentDetails?.duration);
+  const saved = readProgress(id);
+  const resumeFrom = saved?.t > 10 && saved.t < durationSec - 15 ? saved.t : 0;
+  const embedOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const embedSrc =
+    `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&enablejsapi=1&origin=${encodeURIComponent(embedOrigin)}` +
+    (resumeFrom ? `&start=${resumeFrom}` : "");
+
   return (
     <div className="page-content">
       <div className="watch-container">
         <div className="watch-main">
           <div className="watch-left">
             <iframe
+              key={id}
+              ref={iframeRef}
+              id={`yt-player-${id}`}
               className="watch-player"
-              src={`https://www.youtube.com/embed/${id}?autoplay=1&rel=0`}
+              src={embedSrc}
               title={snippet.title}
               allowFullScreen
               allow="autoplay; encrypted-media; picture-in-picture"
@@ -190,7 +304,11 @@ export default function Watch() {
                 </button>
                 <button onClick={handleShare} style={s.btn}>
                   <MdShare size={20}/>
-                  <span>{copied ? "Link copied" : "Share"}</span>
+                  <span>{copied === "link" ? "Link copied" : "Share"}</span>
+                </button>
+                <button onClick={handleShareAtTime} style={s.btn} title="Copy link at the current time">
+                  <MdLink size={20}/>
+                  <span>{copied === "time" ? "Copied" : "Copy at time"}</span>
                 </button>
                 <button onClick={handleSubscribe} style={{ ...s.subBtn, background: subscribed ? "#555" : "#ff0000" }}>
                   <MdOutlineSubscriptions size={16}/>

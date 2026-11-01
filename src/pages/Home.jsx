@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toSeconds } from "../utils/duration";
 import { useAuth } from "../context/AuthContext";
 import useSubscriptionFeed from "../hooks/useSubscriptionFeed";
+import ImageWithSkeleton from "../components/ImageWithSkeleton";
 
 function FeedSection({ title, items }) {
   if (!items.length) return null;
@@ -103,7 +104,7 @@ export default function Home() {
                   const vid = v.id?.videoId || v.id;
                   return (
                     <div key={vid} style={s.shortCard} onClick={() => navigate(`/shorts/${vid}`)}>
-                      <img
+                      <ImageWithSkeleton
                         src={v.snippet.thumbnails?.maxres?.url || v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.medium?.url}
                         alt={v.snippet.title}
                         style={s.shortThumb}
@@ -138,6 +139,6 @@ const s = {
   shortsTitle: { fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 10 },
   shortsRow: { display: "flex", gap: 10, overflowX: "auto", paddingBottom: 12, scrollbarWidth: "thin" },
   shortCard: { flexShrink: 0, width: 120, cursor: "pointer" },
-  shortThumb: { width: 120, height: 200, objectFit: "cover", borderRadius: 10, display: "block" },
+  shortThumb: { width: 120, height: 200, borderRadius: 10 },
   shortTitle: { fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.3 },
 };

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import ImageWithSkeleton from "./ImageWithSkeleton";
 
 export default function ChannelCard({ channel }) {
   const navigate = useNavigate();
@@ -8,10 +9,11 @@ export default function ChannelCard({ channel }) {
 
   return (
     <div style={styles.card} onClick={() => navigate(`/channel/${id}`)}>
-      <img
+      <ImageWithSkeleton
         src={snippet.thumbnails?.medium?.url}
         alt={snippet.title}
         style={styles.avatar}
+        round
       />
       <div style={styles.info}>
         <p style={styles.name}>{snippet.title}</p>
@@ -37,8 +39,6 @@ const styles = {
   avatar: {
     width: 80,
     height: 80,
-    borderRadius: "50%",
-    objectFit: "cover",
     flexShrink: 0,
   },
   info: {

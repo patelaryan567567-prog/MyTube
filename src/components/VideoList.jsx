@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import ImageWithSkeleton from "./ImageWithSkeleton";
 
 /**
  * Vertical list of saved videos (Watch Later, Liked Videos).
@@ -21,7 +22,7 @@ export default function VideoList({ items, onRemove, removeIcon, removeTitle, em
       {items.map((v) => (
         <div key={v.id} style={s.item}>
           <div style={s.thumbWrap} onClick={() => navigate(`/watch/${v.id}`)}>
-            <img src={v.thumb} alt={v.title} style={s.thumb} />
+            <ImageWithSkeleton src={v.thumb} alt={v.title} style={s.thumb} />
             {v.duration && <span style={s.dur}>{v.duration}</span>}
           </div>
           <div style={s.info}>
@@ -41,7 +42,7 @@ const s = {
   list:       { display: "flex", flexDirection: "column", gap: 12 },
   item:       { display: "flex", gap: 12, alignItems: "center", background: "var(--card-bg)", borderRadius: 10, padding: 10, border: "1px solid var(--border)" },
   thumbWrap:  { position: "relative", flexShrink: 0, cursor: "pointer" },
-  thumb:      { width: 160, maxWidth: "38vw", aspectRatio: "16/9", objectFit: "cover", borderRadius: 8, display: "block" },
+  thumb:      { width: 160, maxWidth: "38vw", aspectRatio: "16/9", borderRadius: 8 },
   dur:        { position: "absolute", bottom: 4, right: 4, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 11, fontWeight: 600, padding: "2px 5px", borderRadius: 4 },
   info:       { flex: 1, minWidth: 0 },
   title:      { fontSize: 14, fontWeight: 600, color: "var(--text)", cursor: "pointer", marginBottom: 4, lineHeight: 1.4 },
