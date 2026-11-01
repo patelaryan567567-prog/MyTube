@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useGoogleLogin, hasGrantedAllScopesGoogle } from "@react-oauth/google";
 import * as account from "../api/youtubeAccount";
 
@@ -29,8 +29,12 @@ const readSession = () => {
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(readSession);
-  const [user, setUser] = useState(() => (readSession() ? readJSON(USER_KEY, null) : null));
+  // Show the cached profile immediately on load, even if the access token has
+  // expired — a silent re-auth below usually renews it before anything needs it.
+  const [user, setUser] = useState(() => readJSON(USER_KEY, null));
   const [sessionExpired, setSessionExpired] = useState(false);
+  const hadCachedUser = useRef(Boolean(readJSON(USER_KEY, null)));
+  const silentAttempt = useRef(false);
 
   const [subscriptions, setSubscriptions] = useState([]);
   const [likedVideos, setLikedVideos]     = useState([]);
@@ -64,13 +68,6 @@ export function AuthProvider({ children }) {
     }
   }, [clearSession]);
 
-  // Sign the user out automatically when the access token expires.
-  useEffect(() => {
-    if (!session) return;
-    const timer = setTimeout(() => clearSession(true), Math.max(session.expiresAt - Date.now(), 0));
-    return () => clearTimeout(timer);
-  }, [session, clearSession]);
-
   // Load the real subscriptions and likes from the user's YouTube account.
   useEffect(() => {
     if (!token) return;
@@ -96,31 +93,73 @@ export function AuthProvider({ children }) {
     return () => { cancelled = true; };
   }, [token, handleApiError]);
 
+  // Shared by both the interactive "Sign in" click and the silent background renewal.
+  const applySession = useCallback(async (resp) => {
+    if (!hasGrantedAllScopesGoogle(resp, YT_SCOPE)) {
+      throw new Error("missing-scope");
+    }
+    const profile = await account.getProfile(resp.access_token);
+    // Expire slightly early so we never use a token that is about to lapse.
+    const expiresAt = Date.now() + (Number(resp.expires_in) || 3600) * 1000 - 30000;
+    const next = { token: resp.access_token, expiresAt };
+    writeJSON(SESSION_KEY, next);
+    writeJSON(USER_KEY, profile);
+    removeKeys(...LEGACY_KEYS);
+    setUser(profile);
+    setSession(next);
+    setSessionExpired(false);
+  }, []);
+
   const signIn = useGoogleLogin({
     scope: SCOPES,
     onSuccess: async (resp) => {
-      if (!hasGrantedAllScopesGoogle(resp, YT_SCOPE)) {
-        alert("MyTube needs access to your YouTube account to show your subscriptions and likes. Please allow it and try again.");
-        return;
-      }
+      const silent = silentAttempt.current;
+      silentAttempt.current = false;
       try {
-        const profile = await account.getProfile(resp.access_token);
-        // Expire slightly early so we never use a token that is about to lapse.
-        const expiresAt = Date.now() + (Number(resp.expires_in) || 3600) * 1000 - 30000;
-        const next = { token: resp.access_token, expiresAt };
-        writeJSON(SESSION_KEY, next);
-        writeJSON(USER_KEY, profile);
-        removeKeys(...LEGACY_KEYS);
-        setUser(profile);
-        setSession(next);
-        setSessionExpired(false);
+        await applySession(resp);
       } catch (err) {
         console.error(err);
-        alert("Sign-in failed. Please try again.");
+        if (silent) {
+          // The browser's Google session no longer covers us — the user has to sign in by hand.
+          clearSession(true);
+        } else if (err.message === "missing-scope") {
+          alert("MyTube needs access to your YouTube account to show your subscriptions and likes. Please allow it and try again.");
+        } else {
+          alert("Sign-in failed. Please try again.");
+        }
       }
     },
-    onError: (err) => console.error("Google sign-in error:", err),
+    onError: (err) => {
+      const silent = silentAttempt.current;
+      silentAttempt.current = false;
+      if (silent) { clearSession(true); return; }
+      console.error("Google sign-in error:", err);
+    },
   });
+
+  // Renews the session using Google's existing browser login, without showing any UI.
+  // Works as long as the user is still signed into their Google account in this browser
+  // and already granted MyTube's YouTube permission — exactly the common "I closed the
+  // tab and came back" case, so people aren't forced to sign in again every hour.
+  const trySilentSignIn = useCallback(() => {
+    silentAttempt.current = true;
+    signIn({ prompt: "" });
+  }, [signIn]);
+
+  // On load, if there's a cached profile but the token already expired, quietly renew it
+  // instead of showing a logged-out state the user didn't ask for.
+  useEffect(() => {
+    if (!session && hadCachedUser.current) trySilentSignIn();
+    // Only ever run once, right after mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When the access token is about to expire, renew it the same silent way.
+  useEffect(() => {
+    if (!session) return;
+    const timer = setTimeout(() => trySilentSignIn(), Math.max(session.expiresAt - Date.now(), 0));
+    return () => clearTimeout(timer);
+  }, [session, trySilentSignIn]);
 
   const signOut = useCallback(() => clearSession(false), [clearSession]);
 
