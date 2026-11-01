@@ -119,6 +119,22 @@ a { text-decoration: none; color: inherit; }
 /* ── Shorts scrollbar hide ── */
 .shorts-scroll::-webkit-scrollbar { display: none; }
 
+/* ── Image loading skeleton ── */
+@keyframes mytube-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.mytube-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--hover-bg) 25%, var(--border) 37%, var(--hover-bg) 63%);
+  background-size: 400px 100%;
+  animation: mytube-shimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mytube-skeleton { animation: none; }
+}
+
 /* ── Theme Toggle Button ── */
 .theme-toggle {
   position: relative;

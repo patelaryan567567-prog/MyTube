@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { formatDuration } from "../utils/duration";
+import ImageWithSkeleton from "./ImageWithSkeleton";
 
 export default function VideoCard({ video }) {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ export default function VideoCard({ video }) {
   return (
     <div style={styles.card}>
       <div style={styles.thumbWrap} onClick={() => navigate(`/watch/${id}`)}>
-        <img src={snippet.thumbnails?.medium?.url} alt={snippet.title} style={styles.thumbnail} />
+        <ImageWithSkeleton src={snippet.thumbnails?.medium?.url} alt={snippet.title} style={styles.thumbnail} />
         {duration && <span style={styles.duration}>{duration}</span>}
       </div>
       <div style={styles.info}>
@@ -33,7 +34,7 @@ export default function VideoCard({ video }) {
 const styles = {
   card: { cursor: "pointer", width: "100%", minWidth: 0, flexShrink: 0, background: "transparent" },
   thumbWrap: { borderRadius: 8, overflow: "hidden", position: "relative" },
-  thumbnail: { width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" },
+  thumbnail: { width: "100%", aspectRatio: "16/9", borderRadius: 8 },
   duration: {
     position: "absolute", bottom: 6, right: 6,
     background: "rgba(0,0,0,0.8)", color: "#fff",
