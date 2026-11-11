@@ -35,6 +35,7 @@ export function AuthProvider({ children }) {
   const [sessionExpired, setSessionExpired] = useState(false);
   const hadCachedUser = useRef(Boolean(readJSON(USER_KEY, null)));
   const silentAttempt = useRef(false);
+  const silentTimeout = useRef(null);
 
   const [subscriptions, setSubscriptions] = useState([]);
   const [likedVideos, setLikedVideos]     = useState([]);
@@ -113,6 +114,7 @@ export function AuthProvider({ children }) {
   const signIn = useGoogleLogin({
     scope: SCOPES,
     onSuccess: async (resp) => {
+      clearTimeout(silentTimeout.current);
       const silent = silentAttempt.current;
       silentAttempt.current = false;
       try {
@@ -130,6 +132,7 @@ export function AuthProvider({ children }) {
       }
     },
     onError: (err) => {
+      clearTimeout(silentTimeout.current);
       const silent = silentAttempt.current;
       silentAttempt.current = false;
       if (silent) { clearSession(true); return; }
@@ -141,10 +144,23 @@ export function AuthProvider({ children }) {
   // Works as long as the user is still signed into their Google account in this browser
   // and already granted MyTube's YouTube permission — exactly the common "I closed the
   // tab and came back" case, so people aren't forced to sign in again every hour.
+  //
+  // Some browsers block the hidden sign-in step entirely (third-party cookie/storage
+  // restrictions) and never call onSuccess or onError at all, which used to leave the
+  // app stuck showing a stale "signed in" avatar while subscriptions, likes and
+  // everything else silently never loaded. If nothing happens within a few seconds,
+  // give up and fall back to the normal "please sign in again" state instead of hanging.
   const trySilentSignIn = useCallback(() => {
     silentAttempt.current = true;
     signIn({ prompt: "" });
-  }, [signIn]);
+    clearTimeout(silentTimeout.current);
+    silentTimeout.current = setTimeout(() => {
+      if (silentAttempt.current) {
+        silentAttempt.current = false;
+        clearSession(true);
+      }
+    }, 6000);
+  }, [signIn, clearSession]);
 
   // On load, if there's a cached profile but the token already expired, quietly renew it
   // instead of showing a logged-out state the user didn't ask for.
@@ -161,7 +177,14 @@ export function AuthProvider({ children }) {
     return () => clearTimeout(timer);
   }, [session, trySilentSignIn]);
 
-  const signOut = useCallback(() => clearSession(false), [clearSession]);
+  const signOut = useCallback(() => {
+    clearTimeout(silentTimeout.current);
+    silentAttempt.current = false;
+    clearSession(false);
+  }, [clearSession]);
+
+  // Don't let a pending silent-renewal timeout fire after the provider is gone.
+  useEffect(() => () => clearTimeout(silentTimeout.current), []);
 
   // ── Subscriptions (synced with YouTube) ──
   const toggleSubscription = async (channel) => {
