@@ -1,0 +1,186 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerified() && request.auth.uid == userId;
+    }
+
+    function hasParentUser(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+        get(/databases/$(database)/documents/users/$(userId)).data.uid == request.auth.uid;
+    }
+
+    // Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'picture', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'name', 'email', 'picture', 'createdAt', 'updatedAt']) &&
+        isValidId(data.uid) &&
+        data.uid == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        data.email is string && data.email.size() >= 1 && data.email.size() <= 254 &&
+        data.picture is string && data.picture.size() >= 0 && data.picture.size() <= 1024 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isProfileUpdateAction() {
+      return incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'picture', 'updatedAt']);
+    }
+
+    function isValidSubscriptionItem(data) {
+      return data.keys().hasAll(['id', 'uid', 'subId', 'name', 'avatar', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'uid', 'subId', 'name', 'avatar', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.uid) &&
+        data.uid == request.auth.uid &&
+        data.subId is string && data.subId.size() >= 0 && data.subId.size() <= 256 &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 200 &&
+        data.avatar is string && data.avatar.size() >= 0 && data.avatar.size() <= 1024 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isSubscriptionUpdateAction() {
+      return incoming().id == existing().id &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['subId', 'name', 'avatar', 'updatedAt']);
+    }
+
+    function isValidSavedVideoItem(data) {
+      return data.keys().hasAll(['id', 'uid', 'title', 'thumb', 'channel', 'duration', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'uid', 'title', 'thumb', 'channel', 'duration', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.uid) &&
+        data.uid == request.auth.uid &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 300 &&
+        data.thumb is string && data.thumb.size() >= 0 && data.thumb.size() <= 1024 &&
+        data.channel is string && data.channel.size() >= 0 && data.channel.size() <= 200 &&
+        data.duration is string && data.duration.size() >= 0 && data.duration.size() <= 32 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isSavedVideoUpdateAction() {
+      return incoming().id == existing().id &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'thumb', 'channel', 'duration', 'updatedAt']);
+    }
+
+    // /users/{userId}
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == userId &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isOwner(userId) &&
+        isValidUserProfile(incoming()) &&
+        isValidId(userId) &&
+        isProfileUpdateAction();
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // /users/{userId}/subscriptions/{channelId}
+      match /subscriptions/{channelId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(channelId) && hasParentUser(userId);
+        allow list: if isOwner(userId) && existing().uid == request.auth.uid;
+        allow create: if isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(channelId) &&
+          isValidSubscriptionItem(incoming()) &&
+          incoming().id == channelId &&
+          incoming().uid == userId &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          hasParentUser(userId);
+        allow update: if isOwner(userId) &&
+          isValidSubscriptionItem(incoming()) &&
+          isValidId(userId) &&
+          isValidId(channelId) &&
+          isSubscriptionUpdateAction() &&
+          hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(channelId) && hasParentUser(userId);
+      }
+
+      // /users/{userId}/likedVideos/{videoId}
+      match /likedVideos/{videoId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(videoId) && hasParentUser(userId);
+        allow list: if isOwner(userId) && existing().uid == request.auth.uid;
+        allow create: if isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(videoId) &&
+          isValidSavedVideoItem(incoming()) &&
+          incoming().id == videoId &&
+          incoming().uid == userId &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          hasParentUser(userId);
+        allow update: if isOwner(userId) &&
+          isValidSavedVideoItem(incoming()) &&
+          isValidId(userId) &&
+          isValidId(videoId) &&
+          isSavedVideoUpdateAction() &&
+          hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(videoId) && hasParentUser(userId);
+      }
+
+      // /users/{userId}/watchLater/{videoId}
+      match /watchLater/{videoId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(videoId) && hasParentUser(userId);
+        allow list: if isOwner(userId) && existing().uid == request.auth.uid;
+        allow create: if isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(videoId) &&
+          isValidSavedVideoItem(incoming()) &&
+          incoming().id == videoId &&
+          incoming().uid == userId &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          hasParentUser(userId);
+        allow update: if isOwner(userId) &&
+          isValidSavedVideoItem(incoming()) &&
+          isValidId(userId) &&
+          isValidId(videoId) &&
+          isSavedVideoUpdateAction() &&
+          hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(videoId) && hasParentUser(userId);
+      }
+    }
+  }
+}

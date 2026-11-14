@@ -1,0 +1,5 @@
+{
+  "name": "MyTube",
+  "description": "MyTube - a fast, clean way to watch, search and save videos with persistent Firebase authentication and cloud sync.",
+  "requestFramePermissions": []
+}

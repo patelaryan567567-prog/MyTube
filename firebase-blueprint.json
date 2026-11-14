@@ -1,0 +1,172 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Persistent profile for an authenticated MyTube user.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the user.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified email address of the user.",
+          "minLength": 1,
+          "maxLength": 254
+        },
+        "picture": {
+          "type": "string",
+          "description": "Avatar URL of the user.",
+          "minLength": 0,
+          "maxLength": 1024
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when profile was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when profile was last updated."
+        }
+      },
+      "required": ["uid", "name", "email", "picture", "createdAt", "updatedAt"]
+    },
+    "SubscriptionItem": {
+      "title": "SubscriptionItem",
+      "description": "A YouTube channel subscription synced for a MyTube user.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "YouTube channel ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "uid": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "subId": {
+          "type": "string",
+          "description": "YouTube subscription resource ID.",
+          "minLength": 0,
+          "maxLength": 256
+        },
+        "name": {
+          "type": "string",
+          "description": "Channel title.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "avatar": {
+          "type": "string",
+          "description": "Channel avatar URL.",
+          "minLength": 0,
+          "maxLength": 1024
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when subscription was saved."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when subscription was last updated."
+        }
+      },
+      "required": ["id", "uid", "subId", "name", "avatar", "createdAt", "updatedAt"]
+    },
+    "SavedVideoItem": {
+      "title": "SavedVideoItem",
+      "description": "A saved video in the user's Liked Videos or Watch Later list.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "YouTube video ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "uid": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Video title.",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "thumb": {
+          "type": "string",
+          "description": "Video thumbnail URL.",
+          "minLength": 0,
+          "maxLength": 1024
+        },
+        "channel": {
+          "type": "string",
+          "description": "Channel title.",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "duration": {
+          "type": "string",
+          "description": "Formatted video duration.",
+          "minLength": 0,
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when video was saved."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when video was last updated."
+        }
+      },
+      "required": ["id", "uid", "title", "thumb", "channel", "duration", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profile document owned by userId."
+    },
+    "/users/{userId}/subscriptions/{channelId}": {
+      "schema": { "$ref": "#/entities/SubscriptionItem" },
+      "description": "Subscribed channels for userId."
+    },
+    "/users/{userId}/likedVideos/{videoId}": {
+      "schema": { "$ref": "#/entities/SavedVideoItem" },
+      "description": "Liked videos for userId."
+    },
+    "/users/{userId}/watchLater/{videoId}": {
+      "schema": { "$ref": "#/entities/SavedVideoItem" },
+      "description": "Watch Later videos for userId."
+    }
+  }
+}
