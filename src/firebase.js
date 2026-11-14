@@ -17,28 +17,66 @@ import {
 } from "firebase/firestore";
 import appletConfig from "../firebase-applet-config.json";
 
-// Support Netlify VITE_FIREBASE_* environment variables first, with automatic
-// fallback to firebase-applet-config.json when running in AI Studio.
 const env = import.meta.env || {};
 
-const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || appletConfig.apiKey,
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || appletConfig.authDomain,
-  databaseURL: env.VITE_FIREBASE_DATABASE_URL || appletConfig.databaseURL || undefined,
-  projectId: env.VITE_FIREBASE_PROJECT_ID || appletConfig.projectId,
-  storageBucket:
-    env.VITE_FIREBASE_STORAGE_BUCKET ||
-    appletConfig.storageBucket ||
-    "study-os-f9bba.firebasestorage.app",
-  messagingSenderId:
-    env.VITE_FIREBASE_MESSAGING_SENDER_ID || appletConfig.messagingSenderId,
-  appId: env.VITE_FIREBASE_APP_ID || appletConfig.appId,
-  measurementId:
-    env.VITE_FIREBASE_MEASUREMENT_ID || appletConfig.measurementId || "G-WCBY4NLKE3",
-};
+const isPlaceholder = (val) =>
+  !val ||
+  typeof val !== "string" ||
+  val.trim() === "" ||
+  /^[-_.\s]+$/.test(val.trim()) ||
+  val.includes("your_");
 
+const isAiStudioPreview =
+  typeof window !== "undefined" && window.location.hostname.endsWith(".run.app");
+
+const hasValidEnvFirebase =
+  !isAiStudioPreview &&
+  !isPlaceholder(env.VITE_FIREBASE_API_KEY) &&
+  !isPlaceholder(env.VITE_FIREBASE_PROJECT_ID) &&
+  !isPlaceholder(env.VITE_FIREBASE_APP_ID);
+
+const firebaseConfig = hasValidEnvFirebase
+  ? {
+      apiKey: env.VITE_FIREBASE_API_KEY.trim(),
+      authDomain: !isPlaceholder(env.VITE_FIREBASE_AUTH_DOMAIN)
+        ? env.VITE_FIREBASE_AUTH_DOMAIN.trim()
+        : `${env.VITE_FIREBASE_PROJECT_ID.trim()}.firebaseapp.com`,
+      ...(!isPlaceholder(env.VITE_FIREBASE_DATABASE_URL)
+        ? { databaseURL: env.VITE_FIREBASE_DATABASE_URL.trim() }
+        : {}),
+      projectId: env.VITE_FIREBASE_PROJECT_ID.trim(),
+      storageBucket: !isPlaceholder(env.VITE_FIREBASE_STORAGE_BUCKET)
+        ? env.VITE_FIREBASE_STORAGE_BUCKET.trim()
+        : `${env.VITE_FIREBASE_PROJECT_ID.trim()}.firebasestorage.app`,
+      messagingSenderId: !isPlaceholder(env.VITE_FIREBASE_MESSAGING_SENDER_ID)
+        ? env.VITE_FIREBASE_MESSAGING_SENDER_ID.trim()
+        : "",
+      appId: env.VITE_FIREBASE_APP_ID.trim(),
+      ...(!isPlaceholder(env.VITE_FIREBASE_MEASUREMENT_ID)
+        ? { measurementId: env.VITE_FIREBASE_MEASUREMENT_ID.trim() }
+        : {}),
+    }
+  : {
+      apiKey: appletConfig.apiKey,
+      authDomain: appletConfig.authDomain,
+      projectId: appletConfig.projectId,
+      storageBucket: appletConfig.storageBucket,
+      messagingSenderId: appletConfig.messagingSenderId,
+      appId: appletConfig.appId,
+      ...(!isPlaceholder(env.VITE_FIREBASE_MEASUREMENT_ID)
+        ? { measurementId: env.VITE_FIREBASE_MEASUREMENT_ID.trim() }
+        : {}),
+    };
+
+// Only use appletConfig.firestoreDatabaseId when connected to appletConfig.projectId.
+// If a custom Firebase project is configured via Netlify env vars, use VITE_FIREBASE_FIRESTORE_DATABASE_ID
+// (or the project's default database if not specified).
 const firestoreDatabaseId =
-  env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || appletConfig.firestoreDatabaseId;
+  firebaseConfig.projectId === appletConfig.projectId
+    ? appletConfig.firestoreDatabaseId
+    : !isPlaceholder(env.VITE_FIREBASE_FIRESTORE_DATABASE_ID)
+      ? env.VITE_FIREBASE_FIRESTORE_DATABASE_ID.trim()
+      : undefined;
 
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);

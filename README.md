@@ -21,11 +21,11 @@ To configure Firebase on your published **Netlify** site:
 VITE_FIREBASE_API_KEY=your_firebase_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
 VITE_FIREBASE_DATABASE_URL=https://your_project_id-default-rtdb.firebaseio.com
-VITE_FIREBASE_PROJECT_ID=study-os-f9bba
-VITE_FIREBASE_STORAGE_BUCKET=study-os-f9bba.firebasestorage.app
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
 VITE_FIREBASE_APP_ID=your_firebase_app_id
-VITE_FIREBASE_MEASUREMENT_ID=G-WCBY4NLKE3
+VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 ```
 
 3. In the [Firebase Console](https://console.firebase.google.com/):
