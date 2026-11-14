@@ -3,6 +3,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import Navbar from "./components/Navbar";
+import OfflineIndicator from "./components/OfflineIndicator";
 import Home from "./pages/Home";
 import Watch from "./pages/Watch";
 import Search from "./pages/Search";
@@ -28,20 +29,21 @@ export default function App() {
         <AuthProvider>
           <BrowserRouter>
             <Navbar />
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/watch/:id" element={<Watch />} />
-                <Route path="/search" element={<Search />} />
-                <Route path="/channel/:id" element={<Channel />} />
-                <Route path="/subscriptions" element={<Subscriptions />} />
-                <Route path="/watch-later" element={<WatchLater />} />
-                <Route path="/liked" element={<LikedVideos />} />
-                <Route path="/trending" element={<Trending />} />
-                <Route path="/shorts" element={<Shorts />} />
-                <Route path="/shorts/:id" element={<Shorts />} />
-                <Route path="/you" element={<You />} />
-                <Route path="/playlist/:id" element={<Playlist />} />
-              </Routes>
+            <OfflineIndicator />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/watch/:id" element={<Watch />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/channel/:id" element={<Channel />} />
+              <Route path="/subscriptions" element={<Subscriptions />} />
+              <Route path="/watch-later" element={<WatchLater />} />
+              <Route path="/liked" element={<LikedVideos />} />
+              <Route path="/trending" element={<Trending />} />
+              <Route path="/shorts" element={<Shorts />} />
+              <Route path="/shorts/:id" element={<Shorts />} />
+              <Route path="/you" element={<You />} />
+              <Route path="/playlist/:id" element={<Playlist />} />
+            </Routes>
           </BrowserRouter>
         </AuthProvider>
       </ThemeProvider>

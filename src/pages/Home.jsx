@@ -7,6 +7,7 @@ import { toSeconds } from "../utils/duration";
 import { useAuth } from "../context/AuthContext";
 import useSubscriptionFeed from "../hooks/useSubscriptionFeed";
 import ImageWithSkeleton from "../components/ImageWithSkeleton";
+import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 
 function FeedSection({ title, items }) {
   if (!items.length) return null;
@@ -21,16 +22,17 @@ function FeedSection({ title, items }) {
 }
 
 export default function Home() {
-  const [videos, setVideos]       = useState([]);
-  const [shorts, setShorts]       = useState([]);
-  const [loading, setLoading]     = useState(true);
+  const [videos, setVideos]           = useState([]);
+  const [shorts, setShorts]           = useState([]);
+  const [loading, setLoading]         = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const categoryRef  = useRef("0");
-  const nextTokenRef = useRef("");
-  const loadingRef   = useRef(false);
-  const observerRef  = useRef(null);
-  const bottomRef    = useRef(null);
-  const navigate     = useNavigate();
+  const categoryRef   = useRef("0");
+  const nextTokenRef  = useRef("");
+  const loadingRef    = useRef(false);
+  const observerRef   = useRef(null);
+  const bottomRef     = useRef(null);
+  const shortsRowRef  = useRef(null);
+  const navigate      = useNavigate();
   const { user, subscriptions } = useAuth();
   const { latest: latestFromSubs, popular: popularFromSubs } =
     useSubscriptionFeed(subscriptions, Boolean(user) && subscriptions.length > 0);
@@ -86,6 +88,10 @@ export default function Home() {
     return () => observerRef.current?.disconnect();
   }, [fetchVideos, videos]);
 
+  const scrollShorts = (dir) => {
+    shortsRowRef.current?.scrollBy({ left: dir * 520, behavior: "smooth" });
+  };
+
   return (
     <div className="page-content">
       <CategoryBar onSelect={handleCategorySelect} />
@@ -98,18 +104,28 @@ export default function Home() {
 
           {shorts.length > 0 && (
             <div style={s.shortsWrap}>
-              <h3 style={s.shortsTitle}>Shorts</h3>
-              <div style={s.shortsRow}>
+              <div style={s.shortsHeader}>
+                <h3 style={s.shortsTitle}>Shorts</h3>
+                <div style={s.shortsNav}>
+                  <button style={s.arrowBtn} onClick={() => scrollShorts(-1)} aria-label="Scroll Shorts left">
+                    <MdChevronLeft size={20} />
+                  </button>
+                  <button style={s.arrowBtn} onClick={() => scrollShorts(1)} aria-label="Scroll Shorts right">
+                    <MdChevronRight size={20} />
+                  </button>
+                </div>
+              </div>
+              <div ref={shortsRowRef} className="shorts-scroll" style={s.shortsRow}>
                 {shorts.map((v) => {
                   const vid = v.id?.videoId || v.id;
                   return (
-                    <div key={vid} style={s.shortCard} onClick={() => navigate(`/shorts/${vid}`)}>
+                    <div key={vid} className="video-card-item" style={s.shortCard} onClick={() => navigate(`/shorts/${vid}`)}>
                       <ImageWithSkeleton
                         src={v.snippet.thumbnails?.maxres?.url || v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.medium?.url}
                         alt={v.snippet.title}
                         style={s.shortThumb}
                       />
-                      <p style={s.shortTitle}>{v.snippet.title?.slice(0, 50)}</p>
+                      <p style={s.shortTitle}>{v.snippet.title?.slice(0, 52)}</p>
                     </div>
                   );
                 })}
@@ -132,13 +148,27 @@ export default function Home() {
 const s = {
   msg: { textAlign: "center", marginTop: 40, color: "var(--text-muted)" },
   bottom: { marginTop: 20, textAlign: "center" },
-  feedWrap: { padding: "12px 20px 0" },
+  feedWrap: { padding: "12px 24px 0", maxWidth: 2200, margin: "0 auto" },
   feedTitle: { fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 4 },
-  feedGrid: { padding: "8px 0 4px", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" },
-  shortsWrap: { padding: "12px 20px 0" },
-  shortsTitle: { fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 10 },
-  shortsRow: { display: "flex", gap: 10, overflowX: "auto", paddingBottom: 12, scrollbarWidth: "thin" },
-  shortCard: { flexShrink: 0, width: 120, cursor: "pointer" },
-  shortThumb: { width: 120, height: 200, borderRadius: 10 },
-  shortTitle: { fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.3 },
+  feedGrid: { padding: "8px 0 4px", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" },
+  shortsWrap: { padding: "14px 24px 4px", maxWidth: 2200, margin: "0 auto" },
+  shortsHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
+  shortsTitle: { fontSize: 18, fontWeight: 600, color: "var(--text)" },
+  shortsNav: { display: "flex", gap: 6 },
+  arrowBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: "50%",
+    background: "var(--hover-bg)",
+    border: "1px solid var(--border)",
+    color: "var(--text)",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shortsRow: { display: "flex", gap: 14, overflowX: "auto", paddingBottom: 12, scrollbarWidth: "none" },
+  shortCard: { flexShrink: 0, width: 156, cursor: "pointer" },
+  shortThumb: { width: 156, height: 264, borderRadius: 12 },
+  shortTitle: { fontSize: 12, fontWeight: 500, color: "var(--text)", marginTop: 6, lineHeight: 1.35 },
 };

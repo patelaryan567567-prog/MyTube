@@ -6,7 +6,7 @@ import firebaseRulesPlugin from '@firebase/eslint-plugin-security-rules'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist/**/*']),
+  globalIgnores(['dist/**/*', 'dev-dist/**/*']),
   firebaseRulesPlugin.configs['flat/recommended'],
   {
     files: ['**/*.{js,jsx}'],

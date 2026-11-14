@@ -94,6 +94,7 @@ export default function Watch() {
   const [commentsNextPage, setCommentsNextPage] = useState("");
   const [loadingMore, setLoadingMore]           = useState(false);
   const [copied, setCopied]                     = useState("");
+  const [theaterMode, setTheaterMode]           = useState(false);
 
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
@@ -186,6 +187,8 @@ export default function Watch() {
         player.seekTo(Math.max(player.getCurrentTime() - (e.key === "j" ? 10 : 5), 0), true);
       } else if (e.key === "m") {
         player.isMuted() ? player.unMute() : player.mute();
+      } else if (e.key === "t") {
+        setTheaterMode((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handleKey);
@@ -276,7 +279,7 @@ export default function Watch() {
   return (
     <div className="page-content">
       <div className="watch-container">
-        <div className="watch-main">
+        <div className={`watch-main${theaterMode ? " theater-mode" : ""}`}>
           <div className="watch-left">
             <iframe
               key={id}
@@ -309,6 +312,13 @@ export default function Watch() {
                 <button onClick={handleShareAtTime} style={s.btn} title="Copy link at the current time">
                   <MdLink size={20}/>
                   <span>{copied === "time" ? "Copied" : "Copy at time"}</span>
+                </button>
+                <button
+                  onClick={() => setTheaterMode((prev) => !prev)}
+                  style={{ ...s.btn, color: theaterMode ? "#3ea6ff" : "var(--text)" }}
+                  title="Toggle Theater Mode (shortcut: T)"
+                >
+                  <span>{theaterMode ? "Default view" : "Theater mode"}</span>
                 </button>
                 <button onClick={handleSubscribe} style={{ ...s.subBtn, background: subscribed ? "#555" : "#ff0000" }}>
                   <MdOutlineSubscriptions size={16}/>
