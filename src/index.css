@@ -236,3 +236,379 @@ a { text-decoration: none; color: inherit; }
   background: radial-gradient(circle at 35% 35%, #ffffff, #ffe082);
   box-shadow: 0 2px 8px rgba(0,0,0,0.25), inset 0 -2px 4px rgba(200,150,0,0.2);
 }
+
+/* ══════════════════════════════════════════════════════
+   OPENING SPLASH ANIMATION
+   ══════════════════════════════════════════════════════ */
+.mytube-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: radial-gradient(circle at 50% 45%, #161024 0%, #09090d 65%, #050507 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  cursor: pointer;
+  transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mytube-splash-exit {
+  opacity: 0;
+  transform: scale(1.07);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.mytube-splash-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.42;
+  pointer-events: none;
+  animation: mytube-orb-float 3s ease-in-out infinite alternate;
+}
+
+.mytube-splash-orb-1 {
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, #7c3aed 0%, #c0148c 60%, transparent 100%);
+  top: calc(50% - 210px);
+  left: calc(50% - 220px);
+}
+
+.mytube-splash-orb-2 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #ff4500 0%, #0ea5e9 65%, transparent 100%);
+  bottom: calc(50% - 200px);
+  right: calc(50% - 210px);
+  animation-delay: 0.4s;
+}
+
+.mytube-splash-center {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.mytube-splash-logo-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 136px;
+  height: 108px;
+}
+
+.mytube-splash-ring {
+  position: absolute;
+  width: 104px;
+  height: 82px;
+  border-radius: 24px;
+  border: 1.5px solid rgba(192, 20, 140, 0.55);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mytube-splash-ring-1 {
+  animation: mytube-ring-pulse 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+}
+
+.mytube-splash-ring-2 {
+  border-color: rgba(14, 165, 233, 0.45);
+  animation: mytube-ring-pulse 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.38s forwards;
+}
+
+.mytube-splash-svg {
+  overflow: visible;
+  animation: mytube-logo-pop 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mytube-splash-swirl-1 {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: mytube-swirl-draw 0.95s cubic-bezier(0.33, 1, 0.68, 1) 0.2s forwards;
+}
+
+.mytube-splash-swirl-2 {
+  stroke-dasharray: 32;
+  stroke-dashoffset: 32;
+  animation: mytube-swirl-draw 0.8s cubic-bezier(0.33, 1, 0.68, 1) 0.35s forwards;
+}
+
+.mytube-splash-play {
+  transform-origin: 20px 15px;
+  opacity: 0;
+  animation: mytube-play-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 0.26s forwards;
+}
+
+.mytube-splash-text-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.mytube-splash-brand {
+  display: flex;
+  font-family: var(--font-heading);
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.mytube-splash-letter {
+  display: inline-block;
+  color: #ffffff;
+  opacity: 0;
+  transform: translateY(16px) scale(0.92);
+  animation: mytube-letter-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  text-shadow: 0 4px 24px rgba(192, 20, 140, 0.35);
+}
+
+.mytube-splash-tagline {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  color: rgba(255, 255, 255, 0.58);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: mytube-tagline-fade 0.6s ease-out 0.68s forwards;
+}
+
+.mytube-splash-bar-track {
+  width: 148px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.mytube-splash-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4B0FD4 0%, #C0148C 45%, #FF4500 80%, #0EA5E9 100%);
+  box-shadow: 0 0 12px rgba(255, 69, 0, 0.65);
+  animation: mytube-bar-progress 1.55s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+}
+
+@keyframes mytube-logo-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.55) rotate(-8deg);
+    filter: blur(8px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.06) rotate(1.5deg);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: blur(0px);
+  }
+}
+
+@keyframes mytube-swirl-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes mytube-play-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateX(-4px);
+  }
+  100% {
+    opacity: 0.96;
+    transform: scale(1) translateX(0);
+  }
+}
+
+@keyframes mytube-ring-pulse {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.82);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.65);
+  }
+}
+
+@keyframes mytube-letter-rise {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes mytube-tagline-fade {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mytube-bar-progress {
+  0%   { width: 0%; }
+  45%  { width: 62%; }
+  100% { width: 100%; }
+}
+
+@keyframes mytube-orb-float {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(16px, -14px) scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mytube-splash,
+  .mytube-splash * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   AESTHETIC THEME TOGGLE & RIPPLE ANIMATION
+   ══════════════════════════════════════════════════════ */
+.aesthetic-theme-btn {
+  position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 999px;
+  outline: none;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.aesthetic-theme-btn:hover {
+  transform: scale(1.08);
+}
+
+.aesthetic-theme-btn:active {
+  transform: scale(0.95);
+}
+
+.aesthetic-btn-track {
+  position: relative;
+  width: 62px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--hover-bg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.is-dark .aesthetic-btn-track {
+  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+  border-color: rgba(124, 58, 237, 0.45);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 12px rgba(124, 58, 237, 0.25);
+}
+
+.is-light .aesthetic-btn-track {
+  background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 100%);
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: inset 0 2px 6px rgba(255, 200, 0, 0.2), 0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.aesthetic-icon-sun {
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  opacity: 0.85;
+  z-index: 1;
+  transition: transform 0.4s ease;
+}
+
+.aesthetic-icon-moon {
+  color: #a78bfa;
+  display: flex;
+  align-items: center;
+  opacity: 0.85;
+  z-index: 1;
+  transition: transform 0.4s ease;
+}
+
+.aesthetic-btn-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  z-index: 3;
+  transition: transform 0.45s cubic-bezier(0.68, -0.55, 0.265, 1.55), background 0.4s ease;
+}
+
+.is-dark .aesthetic-btn-thumb {
+  transform: translateX(30px);
+  background: #1e1b4b;
+  box-shadow: 0 3px 12px rgba(124, 58, 237, 0.5);
+}
+
+.aesthetic-glow-fx {
+  position: absolute;
+  inset: -2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #7c3aed, #c0148c, #ff4500, #0ea5e9);
+  opacity: 0;
+  z-index: -1;
+  filter: blur(6px);
+  transition: opacity 0.3s ease;
+}
+
+.aesthetic-theme-btn:hover .aesthetic-glow-fx {
+  opacity: 0.6;
+}
+
+/* Circular expanding ripple transition overlay */
+.theme-ripple-overlay {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: none;
+  z-index: 99999;
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease 0.25s;
+  opacity: 1;
+  will-change: transform, opacity;
+}
+
+.theme-ripple-active {
+  transform: translate(-50%, -50%) scale(600);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-ripple-overlay {
+    transition: none !important;
+  }
+}

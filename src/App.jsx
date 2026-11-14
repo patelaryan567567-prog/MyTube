@@ -4,6 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import Navbar from "./components/Navbar";
 import OfflineIndicator from "./components/OfflineIndicator";
+import SplashScreen from "./components/SplashScreen";
 import Home from "./pages/Home";
 import Watch from "./pages/Watch";
 import Search from "./pages/Search";
@@ -28,6 +29,7 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <BrowserRouter>
+            <SplashScreen />
             <Navbar />
             <OfflineIndicator />
             <Routes>

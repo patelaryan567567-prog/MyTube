@@ -16,8 +16,8 @@ import {
 } from "react-icons/md";
 import MyTubeLogo from "./MyTubeLogo";
 import PWAInstallButton from "./PWAInstallButton";
+import AestheticThemeToggle from "./AestheticThemeToggle";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
 import { getSearchSuggestions } from "../api/youtube";
 
 const HISTORY_KEY = "mytube_search_history";
@@ -66,7 +66,6 @@ export default function Navbar() {
   const navigate    = useNavigate();
   const location    = useLocation();
   const { user, signIn, signOut, syncing, sessionExpired } = useAuth();
-  const { dark, toggleTheme } = useTheme();
   const debounceRef = useRef(null);
   const inputRef    = useRef(null);
   const menuRef     = useRef(null);
@@ -249,9 +248,7 @@ export default function Navbar() {
             </button>
           )}
           <PWAInstallButton compact={isMobile} />
-          <button className={`theme-toggle ${dark ? "dark" : "light"}`} onClick={toggleTheme} title={dark ? "Switch to light theme" : "Switch to dark theme"} aria-label="Toggle theme">
-            <div className="knob">{dark ? "🌙" : "☀️"}</div>
-          </button>
+          <AestheticThemeToggle />
           {user ? (
             <div style={{ position: "relative" }} ref={menuRef}>
               <img
