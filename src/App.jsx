@@ -14,8 +14,12 @@ import Trending from "./pages/Trending";
 import Shorts from "./pages/Shorts";
 import You from "./pages/You";
 import Playlist from "./pages/Playlist";
+import appletConfig from "../firebase-applet-config.json";
 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  appletConfig.oAuthClientId ||
+  "918764992192-2e73c5ldq981on6lr0dic1l8g8un9gad.apps.googleusercontent.com";
 
 export default function App() {
   return (

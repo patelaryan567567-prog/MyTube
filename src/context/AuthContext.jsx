@@ -1,7 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import { useGoogleLogin, hasGrantedAllScopesGoogle } from "@react-oauth/google";
 import {
   onAuthStateChanged,
   signInWithPopup,
+  signInWithCredential,
   signOut as firebaseSignOut,
   GoogleAuthProvider,
 } from "firebase/auth";
@@ -25,7 +27,11 @@ const AuthContext = createContext();
 const USER_KEY    = "mytube_user";
 const SESSION_KEY = "mytube_yt_session";
 const WL_KEY      = "mytube_watchlater";
-const LEGACY_KEYS = ["mytube_subscriptions", "mytube_liked"];
+const SUBS_KEY    = "mytube_subscriptions";
+const LIKED_KEY   = "mytube_liked";
+
+const YT_SCOPE = "https://www.googleapis.com/auth/youtube";
+const SCOPES   = `openid email profile ${YT_SCOPE}`;
 
 const readJSON = (key, fallback) => {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
@@ -35,8 +41,8 @@ const writeJSON = (key, val) => {
 };
 const removeKeys = (...keys) => keys.forEach((k) => { try { localStorage.removeItem(k); } catch { /* ignore */ } });
 
-// YouTube OAuth access token is used for live YouTube API mutations when valid,
-// while Firebase Auth + Firestore keeps the user logged in permanently!
+// YouTube OAuth access token is valid for ~1 hour for live YouTube API calls,
+// while Firebase Auth + Firestore + cached state keeps the user logged in permanently!
 const readSession = () => {
   const s = readJSON(SESSION_KEY, null);
   return s?.token && s.expiresAt > Date.now() ? s : null;
@@ -44,28 +50,32 @@ const readSession = () => {
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(readSession);
+  // Keep cached user, subscriptions, likedVideos, and watchLater immediately available on load
+  // so the user NEVER gets logged out when the 1-hour YouTube token expires.
   const [user, setUser] = useState(() => readJSON(USER_KEY, null));
   const [authReady, setAuthReady] = useState(false);
   const [firebaseUid, setFirebaseUid] = useState(null);
 
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [likedVideos, setLikedVideos]     = useState([]);
+  const [subscriptions, setSubscriptions] = useState(() => readJSON(SUBS_KEY, []));
+  const [likedVideos, setLikedVideos]     = useState(() => readJSON(LIKED_KEY, []));
   const [likedMap, setLikedMap]           = useState({});
   const [watchLater, setWatchLater]       = useState(() => readJSON(WL_KEY, []));
   const [syncing, setSyncing]             = useState(false);
 
   const token = session?.token || null;
   const syncedTokenRef = useRef(null);
+  const pendingActionRef = useRef(null);
 
   // 1. Listen to Firebase Authentication state (persists indefinitely across sessions/reloads)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
+        const cached = readJSON(USER_KEY, null);
         const profile = {
           uid: fbUser.uid,
-          name: fbUser.displayName || fbUser.email?.split("@")[0] || "MyTube User",
-          email: fbUser.email || "",
-          picture: fbUser.photoURL || "",
+          name: fbUser.displayName || cached?.name || fbUser.email?.split("@")[0] || "MyTube User",
+          email: fbUser.email || cached?.email || "",
+          picture: fbUser.photoURL || cached?.picture || "",
         };
         setUser(profile);
         setFirebaseUid(fbUser.uid);
@@ -73,17 +83,10 @@ export function AuthProvider({ children }) {
         try {
           await upsertUserProfile(fbUser, profile);
         } catch (err) {
-          console.error("Failed to sync user profile to Firestore:", err);
+          console.warn("Could not sync user profile to Firestore:", err);
         }
       } else {
-        // Only clear user state when Firebase Auth explicitly signs out
-        setUser(null);
         setFirebaseUid(null);
-        setSession(null);
-        setSubscriptions([]);
-        setLikedVideos([]);
-        setLikedMap({});
-        removeKeys(SESSION_KEY, USER_KEY, ...LEGACY_KEYS);
       }
       setAuthReady(true);
     });
@@ -99,6 +102,7 @@ export function AuthProvider({ children }) {
     const unsubSubs = onSnapshot(
       subsQuery,
       (snapshot) => {
+        if (snapshot.empty) return;
         const items = snapshot.docs.map((d) => {
           const data = d.data();
           return {
@@ -109,9 +113,14 @@ export function AuthProvider({ children }) {
           };
         });
         setSubscriptions(items);
+        writeJSON(SUBS_KEY, items);
       },
       (error) => {
-        handleFirestoreError(error, OperationType.LIST, subsPath);
+        try {
+          handleFirestoreError(error, OperationType.LIST, subsPath);
+        } catch (e) {
+          console.warn(e);
+        }
       }
     );
 
@@ -120,6 +129,7 @@ export function AuthProvider({ children }) {
     const unsubLiked = onSnapshot(
       likedQuery,
       (snapshot) => {
+        if (snapshot.empty) return;
         const items = snapshot.docs.map((d) => {
           const data = d.data();
           return {
@@ -131,9 +141,14 @@ export function AuthProvider({ children }) {
           };
         });
         setLikedVideos(items);
+        writeJSON(LIKED_KEY, items);
       },
       (error) => {
-        handleFirestoreError(error, OperationType.LIST, likedPath);
+        try {
+          handleFirestoreError(error, OperationType.LIST, likedPath);
+        } catch (e) {
+          console.warn(e);
+        }
       }
     );
 
@@ -142,6 +157,7 @@ export function AuthProvider({ children }) {
     const unsubWatchLater = onSnapshot(
       wlQuery,
       (snapshot) => {
+        if (snapshot.empty) return;
         const items = snapshot.docs.map((d) => {
           const data = d.data();
           return {
@@ -156,7 +172,11 @@ export function AuthProvider({ children }) {
         writeJSON(WL_KEY, items);
       },
       (error) => {
-        handleFirestoreError(error, OperationType.LIST, wlPath);
+        try {
+          handleFirestoreError(error, OperationType.LIST, wlPath);
+        } catch (e) {
+          console.warn(e);
+        }
       }
     );
 
@@ -167,31 +187,31 @@ export function AuthProvider({ children }) {
     };
   }, [authReady, firebaseUid]);
 
-  // Shared handling for failed YouTube API calls — never logs the user out of the website!
+  // Shared handling for failed YouTube API calls — NEVER logs the user out of the website!
   const handleApiError = useCallback((err, action) => {
     const { status, reason } = account.errorInfo(err);
     console.error(`Could not ${action}:`, err?.response?.data || err);
     if (status === 401) {
-      // YouTube OAuth access token expired, but keep the user logged in via Firebase!
+      // Only clear the expired 1-hour YouTube token; keep user logged in on the website!
       setSession(null);
       removeKeys(SESSION_KEY);
       return;
     }
     if (status === 403 && (reason === "quotaExceeded" || reason === "rateLimitExceeded")) {
-      console.warn("YouTube's daily limit has been reached. Saved to your MyTube cloud library.");
+      console.warn("YouTube daily quota reached; changes are saved in your MyTube account.");
     }
   }, []);
 
-  // 3. When a fresh YouTube OAuth access token is present, sync subscriptions & likes from YouTube into Firestore
+  // 3. Import real subscriptions & liked videos from YouTube whenever we get a valid OAuth access_token,
+  // and persist them into both localStorage and Cloud Firestore!
   useEffect(() => {
-    if (!token || !firebaseUid || syncedTokenRef.current === token) return;
+    if (!token || syncedTokenRef.current === token) return;
     let cancelled = false;
     syncedTokenRef.current = token;
 
     const run = async () => {
       setSyncing(true);
       try {
-        await upsertUserProfile(auth.currentUser);
         const [subs, liked] = await Promise.all([
           account.listMySubscriptions(token),
           account.listMyLikedVideos(token),
@@ -200,12 +220,17 @@ export function AuthProvider({ children }) {
         setSubscriptions(subs);
         setLikedVideos(liked);
         setLikedMap({});
+        writeJSON(SUBS_KEY, subs);
+        writeJSON(LIKED_KEY, liked);
 
-        // Persist fetched YouTube subscriptions and likes into Firestore in the background
-        await Promise.all([
-          ...subs.slice(0, 100).map((ch) => saveSubscriptionToFirestore(firebaseUid, ch)),
-          ...liked.slice(0, 50).map((v) => saveVideoItemToFirestore(firebaseUid, "likedVideos", v)),
-        ]);
+        const activeUid = firebaseUid || auth.currentUser?.uid;
+        if (activeUid) {
+          await upsertUserProfile(auth.currentUser);
+          await Promise.all([
+            ...subs.slice(0, 100).map((ch) => saveSubscriptionToFirestore(activeUid, ch)),
+            ...liked.slice(0, 50).map((v) => saveVideoItemToFirestore(activeUid, "likedVideos", v)),
+          ]);
+        }
       } catch (err) {
         if (!cancelled) handleApiError(err, "load your YouTube data");
       } finally {
@@ -216,14 +241,62 @@ export function AuthProvider({ children }) {
     return () => { cancelled = true; };
   }, [token, firebaseUid, handleApiError]);
 
-  // 4. Sign in with Firebase Google Auth Popup (persists login forever until explicit sign-out)
-  const signIn = useCallback(async () => {
+  // Helper to apply an OAuth access_token from VITE_GOOGLE_CLIENT_ID AND bridge it into Firebase Auth
+  const applyOAuthToken = useCallback(async (accessToken, expiresIn = 3600) => {
+    const profile = await account.getProfile(accessToken);
+    const expiresAt = Date.now() + (Number(expiresIn) || 3600) * 1000 - 30000;
+    const nextSession = { token: accessToken, expiresAt };
+
+    writeJSON(SESSION_KEY, nextSession);
+    writeJSON(USER_KEY, profile);
+    setUser((prev) => ({ ...prev, ...profile }));
+    setSession(nextSession);
+
+    // Bridge the Google OAuth access_token directly into Firebase Authentication
+    // without opening a second popup!
+    try {
+      const credential = GoogleAuthProvider.credential(null, accessToken);
+      const fbResult = await signInWithCredential(auth, credential);
+      const fbUser = fbResult.user;
+      const fullProfile = {
+        uid: fbUser.uid,
+        name: profile.name || fbUser.displayName || "MyTube User",
+        email: profile.email || fbUser.email || "",
+        picture: profile.picture || fbUser.photoURL || "",
+      };
+      setUser(fullProfile);
+      setFirebaseUid(fbUser.uid);
+      writeJSON(USER_KEY, fullProfile);
+      await upsertUserProfile(fbUser, fullProfile);
+
+      // Sync any local Watch Later items to Firestore
+      const localWl = readJSON(WL_KEY, []);
+      if (Array.isArray(localWl) && localWl.length > 0) {
+        await Promise.all(
+          localWl.map((v) => saveVideoItemToFirestore(fbUser.uid, "watchLater", v))
+        );
+      }
+    } catch (fbErr) {
+      // Even if Firebase Auth Google provider isn't enabled yet in Firebase Console on Netlify,
+      // the user stays signed in via USER_KEY + local cache!
+      console.warn("Firebase Auth credential bridge note:", fbErr?.message || fbErr);
+    }
+
+    if (pendingActionRef.current) {
+      const fn = pendingActionRef.current;
+      pendingActionRef.current = null;
+      fn(accessToken);
+    }
+  }, []);
+
+  // Fallback login via Firebase signInWithPopup if VITE_GOOGLE_CLIENT_ID is not set or fails
+  const signInWithFirebasePopup = useCallback(async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const accessToken = credential?.accessToken;
-
       const fbUser = result.user;
+
       const profile = {
         uid: fbUser.uid,
         name: fbUser.displayName || fbUser.email?.split("@")[0] || "MyTube User",
@@ -232,23 +305,17 @@ export function AuthProvider({ children }) {
       };
 
       writeJSON(USER_KEY, profile);
-      removeKeys(...LEGACY_KEYS);
       setUser(profile);
       setFirebaseUid(fbUser.uid);
 
-      await upsertUserProfile(fbUser, profile);
-
-      // Migrate any existing local Watch Later items to Firestore on sign-in
-      const localWl = readJSON(WL_KEY, []);
-      if (Array.isArray(localWl) && localWl.length > 0) {
-        await Promise.all(
-          localWl.map((v) => saveVideoItemToFirestore(fbUser.uid, "watchLater", v))
-        );
+      try {
+        await upsertUserProfile(fbUser, profile);
+      } catch (e) {
+        console.warn("Could not upsert profile to Firestore:", e);
       }
 
       if (accessToken) {
-        const expiresAt = Date.now() + 3550 * 1000;
-        const nextSession = { token: accessToken, expiresAt };
+        const nextSession = { token: accessToken, expiresAt: Date.now() + 3550 * 1000 };
         writeJSON(SESSION_KEY, nextSession);
         setSession(nextSession);
       }
@@ -256,34 +323,66 @@ export function AuthProvider({ children }) {
       if (err?.code === "auth/popup-closed-by-user" || err?.code === "auth/cancelled-popup-request") {
         return;
       }
-      console.error("Firebase Google sign-in error:", err);
+      console.error("Firebase sign-in error:", err);
     }
   }, []);
+
+  // Primary Google OAuth login using VITE_GOOGLE_CLIENT_ID (best for YouTube Data API v3 scopes)
+  const googleOAuthLogin = useGoogleLogin({
+    scope: SCOPES,
+    onSuccess: async (resp) => {
+      try {
+        if (!hasGrantedAllScopesGoogle(resp, YT_SCOPE)) {
+          console.warn("YouTube scope was not granted; continuing with basic profile.");
+        }
+        await applyOAuthToken(resp.access_token, resp.expires_in);
+      } catch (err) {
+        console.error("Google OAuth login failed, trying Firebase popup fallback:", err);
+        await signInWithFirebasePopup();
+      }
+    },
+    onError: async (err) => {
+      console.warn("Google OAuth client error, falling back to Firebase Auth popup:", err);
+      await signInWithFirebasePopup();
+    },
+  });
+
+  const signIn = useCallback(() => {
+    if (import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+      googleOAuthLogin();
+    } else {
+      signInWithFirebasePopup();
+    }
+  }, [googleOAuthLogin, signInWithFirebasePopup]);
 
   const signOut = useCallback(async () => {
     try {
       await firebaseSignOut(auth);
     } catch (err) {
-      console.error("Error signing out:", err);
+      console.warn("Error signing out of Firebase:", err);
     }
+    syncedTokenRef.current = null;
     setSession(null);
     setUser(null);
     setFirebaseUid(null);
     setSubscriptions([]);
     setLikedVideos([]);
     setLikedMap({});
-    removeKeys(SESSION_KEY, USER_KEY, ...LEGACY_KEYS);
+    removeKeys(SESSION_KEY, USER_KEY, SUBS_KEY, LIKED_KEY);
   }, []);
 
-  // ── Subscriptions (synced with Firestore + YouTube when token is active) ──
+  // ── Subscriptions (synced with YouTube + Firestore + localStorage) ──
   const toggleSubscription = async (channel) => {
     if (!user) return;
     const existing = subscriptions.find((c) => c.id === channel.id);
 
     if (existing) {
-      setSubscriptions((prev) => prev.filter((c) => c.id !== channel.id));
+      const updated = subscriptions.filter((c) => c.id !== channel.id);
+      setSubscriptions(updated);
+      writeJSON(SUBS_KEY, updated);
+
       if (firebaseUid) {
-        removeSubscriptionFromFirestore(firebaseUid, channel.id).catch(console.error);
+        removeSubscriptionFromFirestore(firebaseUid, channel.id).catch(console.warn);
       }
       if (token && existing.subId) {
         try {
@@ -299,23 +398,30 @@ export function AuthProvider({ children }) {
         name: channel.name || "Channel",
         avatar: channel.avatar || "",
       };
-      setSubscriptions((prev) => [newSub, ...prev]);
+      const updated = [newSub, ...subscriptions];
+      setSubscriptions(updated);
+      writeJSON(SUBS_KEY, updated);
+
       if (token) {
         try {
           const subId = await account.subscribe(token, channel.id);
           newSub.subId = subId || "";
-          setSubscriptions((prev) => prev.map((c) => (c.id === channel.id ? { ...c, subId } : c)));
+          setSubscriptions((prev) => {
+            const next = prev.map((c) => (c.id === channel.id ? { ...c, subId } : c));
+            writeJSON(SUBS_KEY, next);
+            return next;
+          });
         } catch (err) {
           handleApiError(err, "subscribe");
         }
       }
       if (firebaseUid) {
-        saveSubscriptionToFirestore(firebaseUid, newSub).catch(console.error);
+        saveSubscriptionToFirestore(firebaseUid, newSub).catch(console.warn);
       }
     }
   };
 
-  // ── Likes (synced with Firestore + YouTube when token is active) ──
+  // ── Likes (synced with YouTube + Firestore + localStorage) ──
   const isLiked = (id) => (id in likedMap ? likedMap[id] : likedVideos.some((v) => v.id === id));
 
   const toggleLiked = async (video) => {
@@ -325,16 +431,18 @@ export function AuthProvider({ children }) {
       setLikedMap((m) => ({ ...m, [video.id]: liked }));
       setLikedVideos((prev) => {
         const without = prev.filter((v) => v.id !== video.id);
-        return liked ? [video, ...without] : without;
+        const next = liked ? [video, ...without] : without;
+        writeJSON(LIKED_KEY, next);
+        return next;
       });
     };
     apply(nowLiked);
 
     if (firebaseUid) {
       if (nowLiked) {
-        saveVideoItemToFirestore(firebaseUid, "likedVideos", video).catch(console.error);
+        saveVideoItemToFirestore(firebaseUid, "likedVideos", video).catch(console.warn);
       } else {
-        removeVideoItemFromFirestore(firebaseUid, "likedVideos", video.id).catch(console.error);
+        removeVideoItemFromFirestore(firebaseUid, "likedVideos", video.id).catch(console.warn);
       }
     }
 
@@ -353,10 +461,10 @@ export function AuthProvider({ children }) {
     try {
       const rating = await account.getRating(token, id);
       setLikedMap((m) => ({ ...m, [id]: rating === "like" }));
-    } catch { /* fallback to Firestore liked list */ }
+    } catch { /* fallback to saved likedVideos list */ }
   }, [token]);
 
-  // ── Watch Later (synced with Firestore + localStorage cache) ──
+  // ── Watch Later (synced with Firestore + localStorage) ──
   const toggleWatchLater = (video) => {
     const exists = watchLater.some((v) => v.id === video.id);
     const updated = exists
@@ -367,9 +475,9 @@ export function AuthProvider({ children }) {
 
     if (firebaseUid) {
       if (exists) {
-        removeVideoItemFromFirestore(firebaseUid, "watchLater", video.id).catch(console.error);
+        removeVideoItemFromFirestore(firebaseUid, "watchLater", video.id).catch(console.warn);
       } else {
-        saveVideoItemToFirestore(firebaseUid, "watchLater", video).catch(console.error);
+        saveVideoItemToFirestore(firebaseUid, "watchLater", video).catch(console.warn);
       }
     }
   };
