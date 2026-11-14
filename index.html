@@ -28,9 +28,292 @@
         var t = localStorage.getItem("mytube_theme");
         document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dark");
       } catch (e) {}
+      window.__mytubeSplashStart = Date.now();
     </script>
+
+    <!-- Critical inline styles so the opening animation plays immediately on website load (GPU-composited for low-end devices) -->
+    <style>
+      #mytube-splash-root {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: radial-gradient(circle at 50% 45%, #161024 0%, #09090d 65%, #050507 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        contain: strict;
+        user-select: none;
+        cursor: pointer;
+        font-family: "Poppins", "Inter", system-ui, sans-serif;
+        will-change: opacity, transform;
+        transform: translate3d(0, 0, 0);
+        transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      #mytube-splash-root.mytube-splash-exit {
+        opacity: 0;
+        transform: scale3d(1.06, 1.06, 1);
+        pointer-events: none;
+      }
+      .mytube-splash-orb {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.45;
+        pointer-events: none;
+        will-change: transform;
+        animation: mytube-orb-float 3s ease-in-out infinite alternate;
+      }
+      .mytube-splash-orb-1 {
+        width: 460px;
+        height: 460px;
+        background: radial-gradient(circle, rgba(124, 58, 237, 0.72) 0%, rgba(192, 20, 140, 0.35) 38%, rgba(192, 20, 140, 0) 70%);
+        top: calc(50% - 270px);
+        left: calc(50% - 280px);
+      }
+      .mytube-splash-orb-2 {
+        width: 420px;
+        height: 420px;
+        background: radial-gradient(circle, rgba(255, 69, 0, 0.65) 0%, rgba(14, 165, 233, 0.32) 38%, rgba(14, 165, 233, 0) 70%);
+        bottom: calc(50% - 260px);
+        right: calc(50% - 270px);
+        animation-delay: 0.4s;
+      }
+      .mytube-splash-center {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+      .mytube-splash-logo-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 136px;
+        height: 108px;
+      }
+      .mytube-splash-logo-glow {
+        position: absolute;
+        width: 144px;
+        height: 112px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(192, 20, 140, 0.48) 0%, rgba(124, 58, 237, 0.18) 48%, transparent 74%);
+        pointer-events: none;
+        transform: translate3d(0, 6px, 0);
+      }
+      .mytube-splash-ring {
+        position: absolute;
+        width: 104px;
+        height: 82px;
+        border-radius: 24px;
+        border: 1.5px solid rgba(192, 20, 140, 0.55);
+        opacity: 0;
+        pointer-events: none;
+        will-change: transform, opacity;
+      }
+      .mytube-splash-ring-1 {
+        animation: mytube-ring-pulse 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+      }
+      .mytube-splash-ring-2 {
+        border-color: rgba(14, 165, 233, 0.45);
+        animation: mytube-ring-pulse 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.38s forwards;
+      }
+      .mytube-splash-svg {
+        position: relative;
+        overflow: visible;
+        will-change: transform, opacity;
+        animation: mytube-logo-pop 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .mytube-splash-swirl-1 {
+        stroke-dasharray: 60;
+        stroke-dashoffset: 60;
+        animation: mytube-swirl-draw 0.95s cubic-bezier(0.33, 1, 0.68, 1) 0.2s forwards;
+      }
+      .mytube-splash-swirl-2 {
+        stroke-dasharray: 32;
+        stroke-dashoffset: 32;
+        animation: mytube-swirl-draw 0.8s cubic-bezier(0.33, 1, 0.68, 1) 0.35s forwards;
+      }
+      .mytube-splash-play {
+        transform-origin: 20px 15px;
+        opacity: 0;
+        will-change: transform, opacity;
+        animation: mytube-play-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 0.26s forwards;
+      }
+      .mytube-splash-text-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .mytube-splash-brand {
+        display: flex;
+        font-size: 38px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+      }
+      .mytube-splash-letter {
+        display: inline-block;
+        color: #ffffff;
+        opacity: 0;
+        will-change: transform, opacity;
+        transform: translate3d(0, 16px, 0) scale3d(0.92, 0.92, 1);
+        animation: mytube-letter-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        text-shadow: 0 4px 20px rgba(192, 20, 140, 0.35);
+      }
+      .mytube-splash-tagline {
+        margin: 0;
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.28em;
+        color: rgba(255, 255, 255, 0.58);
+        opacity: 0;
+        will-change: transform, opacity;
+        transform: translate3d(0, 8px, 0);
+        animation: mytube-tagline-fade 0.6s ease-out 0.68s forwards;
+      }
+      .mytube-splash-bar-track {
+        width: 148px;
+        height: 3px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+        margin-top: 4px;
+      }
+      .mytube-splash-bar-fill {
+        height: 100%;
+        width: 100%;
+        border-radius: 999px;
+        transform-origin: left center;
+        transform: scaleX(0);
+        will-change: transform;
+        background: linear-gradient(90deg, #4B0FD4 0%, #C0148C 45%, #FF4500 80%, #0EA5E9 100%);
+        box-shadow: 0 0 10px rgba(255, 69, 0, 0.55);
+        animation: mytube-bar-progress 1.55s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+      }
+      @keyframes mytube-logo-pop {
+        0% { opacity: 0; transform: scale3d(0.55, 0.55, 1) rotate(-8deg); }
+        65% { opacity: 1; transform: scale3d(1.06, 1.06, 1) rotate(1.5deg); }
+        100% { opacity: 1; transform: scale3d(1, 1, 1) rotate(0deg); }
+      }
+      @keyframes mytube-swirl-draw { to { stroke-dashoffset: 0; } }
+      @keyframes mytube-play-pop {
+        0% { opacity: 0; transform: scale3d(0.3, 0.3, 1) translate3d(-4px, 0, 0); }
+        100% { opacity: 0.96; transform: scale3d(1, 1, 1) translate3d(0, 0, 0); }
+      }
+      @keyframes mytube-ring-pulse {
+        0% { opacity: 0.75; transform: scale3d(0.82, 0.82, 1); }
+        100% { opacity: 0; transform: scale3d(1.65, 1.65, 1); }
+      }
+      @keyframes mytube-letter-rise { to { opacity: 1; transform: translate3d(0, 0, 0) scale3d(1, 1, 1); } }
+      @keyframes mytube-tagline-fade { to { opacity: 1; transform: translate3d(0, 0, 0); } }
+      @keyframes mytube-bar-progress {
+        0% { transform: scaleX(0); }
+        45% { transform: scaleX(0.62); }
+        100% { transform: scaleX(1); }
+      }
+      @keyframes mytube-orb-float {
+        0% { transform: translate3d(0, 0, 0) scale3d(1, 1, 1); }
+        100% { transform: translate3d(16px, -14px, 0) scale3d(1.08, 1.08, 1); }
+      }
+    </style>
   </head>
   <body>
+    <div id="mytube-splash-root" role="presentation" aria-hidden="true">
+      <div class="mytube-splash-orb mytube-splash-orb-1"></div>
+      <div class="mytube-splash-orb mytube-splash-orb-2"></div>
+      <div class="mytube-splash-center">
+        <div class="mytube-splash-logo-wrap">
+          <div class="mytube-splash-logo-glow"></div>
+          <span class="mytube-splash-ring mytube-splash-ring-1"></span>
+          <span class="mytube-splash-ring mytube-splash-ring-2"></span>
+          <svg
+            class="mytube-splash-svg"
+            width="112"
+            height="84"
+            viewBox="0 0 40 30"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <linearGradient id="bootSplashGradA" x1="0" y1="0" x2="40" y2="30" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#4B0FD4" />
+                <stop offset="45%" stop-color="#C0148C" />
+                <stop offset="100%" stop-color="#FF4500" />
+              </linearGradient>
+              <linearGradient id="bootSplashGradB" x1="0" y1="30" x2="36" y2="0" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#0EA5E9" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#7C3AED" stop-opacity="0.15" />
+              </linearGradient>
+            </defs>
+            <rect
+              class="mytube-splash-rect"
+              x="1" y="1" width="38" height="28" rx="7.5" ry="7.5"
+              fill="url(#bootSplashGradA)"
+            />
+            <path
+              class="mytube-splash-swirl-1"
+              d="M2 22 Q10 8 22 14 Q30 18 38 6"
+              stroke="url(#bootSplashGradB)"
+              stroke-width="3.5"
+              fill="none"
+              stroke-linecap="round"
+            />
+            <path
+              class="mytube-splash-swirl-2"
+              d="M1 18 Q8 28 18 24"
+              stroke="#60A5FA"
+              stroke-width="1.6"
+              fill="none"
+              stroke-linecap="round"
+              opacity="0.65"
+            />
+            <polygon class="mytube-splash-play" points="15,9 15,21 28,15" fill="#ffffff" />
+          </svg>
+        </div>
+
+        <div class="mytube-splash-text-wrap">
+          <div class="mytube-splash-brand" aria-label="MyTube">
+            <span class="mytube-splash-letter" style="animation-delay: 0.28s">M</span>
+            <span class="mytube-splash-letter" style="animation-delay: 0.335s">y</span>
+            <span class="mytube-splash-letter" style="animation-delay: 0.39s">T</span>
+            <span class="mytube-splash-letter" style="animation-delay: 0.445s">u</span>
+            <span class="mytube-splash-letter" style="animation-delay: 0.5s">b</span>
+            <span class="mytube-splash-letter" style="animation-delay: 0.555s">e</span>
+          </div>
+          <p class="mytube-splash-tagline">WATCH · DISCOVER · SYNC</p>
+        </div>
+
+        <div class="mytube-splash-bar-track">
+          <div class="mytube-splash-bar-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var el = document.getElementById("mytube-splash-root");
+        if (!el) return;
+        var dismissed = false;
+        window.__dismissMyTubeSplash = function () {
+          if (dismissed) return;
+          dismissed = true;
+          el.classList.add("mytube-splash-exit");
+          setTimeout(function () {
+            if (el && el.parentNode) el.parentNode.removeChild(el);
+          }, 560);
+        };
+        el.addEventListener("click", window.__dismissMyTubeSplash);
+        // Safety timeout in case app bundle takes unusually long
+        setTimeout(window.__dismissMyTubeSplash, 4500);
+      })();
+    </script>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

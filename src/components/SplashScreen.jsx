@@ -1,9 +1,32 @@
 import { useEffect, useState } from "react";
 
 export default function SplashScreen() {
-  const [phase, setPhase] = useState("enter"); // "enter" | "exit" | "done"
+  const [hasBootSplash] = useState(() =>
+    typeof document !== "undefined" && Boolean(document.getElementById("mytube-splash-root"))
+  );
+  const [phase, setPhase] = useState(() => (hasBootSplash ? "done" : "enter"));
 
   useEffect(() => {
+    if (hasBootSplash) {
+      const start = window.__mytubeSplashStart || Date.now();
+      const elapsed = Date.now() - start;
+      const remaining = Math.max(0, 1900 - elapsed);
+
+      const timer = setTimeout(() => {
+        if (typeof window.__dismissMyTubeSplash === "function") {
+          window.__dismissMyTubeSplash();
+        } else {
+          const el = document.getElementById("mytube-splash-root");
+          if (el) {
+            el.classList.add("mytube-splash-exit");
+            setTimeout(() => el.remove(), 560);
+          }
+        }
+      }, remaining);
+
+      return () => clearTimeout(timer);
+    }
+
     const exitTimer = setTimeout(() => {
       setPhase("exit");
     }, 1850);
@@ -16,7 +39,7 @@ export default function SplashScreen() {
       clearTimeout(exitTimer);
       clearTimeout(doneTimer);
     };
-  }, []);
+  }, [hasBootSplash]);
 
   if (phase === "done") return null;
 
@@ -34,6 +57,7 @@ export default function SplashScreen() {
       <div className="mytube-splash-center">
         {/* Expanding sonic pulse rings behind the logo */}
         <div className="mytube-splash-logo-wrap">
+          <div className="mytube-splash-logo-glow" />
           <span className="mytube-splash-ring mytube-splash-ring-1" />
           <span className="mytube-splash-ring mytube-splash-ring-2" />
 
@@ -56,9 +80,6 @@ export default function SplashScreen() {
                 <stop offset="0%" stopColor="#0EA5E9" stopOpacity="0.9" />
                 <stop offset="100%" stopColor="#7C3AED" stopOpacity="0.15" />
               </linearGradient>
-              <filter id="splashGlow" x="-25%" y="-25%" width="150%" height="160%">
-                <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor="#C0148C" floodOpacity="0.65" />
-              </filter>
             </defs>
 
             {/* Main rounded body */}
@@ -71,7 +92,6 @@ export default function SplashScreen() {
               rx="7.5"
               ry="7.5"
               fill="url(#splashGradA)"
-              filter="url(#splashGlow)"
             />
 
             {/* Animated swirl light trails */}
@@ -90,7 +110,7 @@ export default function SplashScreen() {
               strokeWidth="1.6"
               fill="none"
               strokeLinecap="round"
-               opacity="0.65"
+              opacity="0.65"
             />
 
             {/* Crisp white play triangle */}

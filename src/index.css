@@ -249,43 +249,44 @@ a { text-decoration: none; color: inherit; }
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  contain: strict;
   user-select: none;
   cursor: pointer;
-  transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-              filter 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  transform: translate3d(0, 0, 0);
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mytube-splash-exit {
   opacity: 0;
-  transform: scale(1.07);
-  filter: blur(10px);
+  transform: scale3d(1.06, 1.06, 1);
   pointer-events: none;
 }
 
 .mytube-splash-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.42;
+  opacity: 0.45;
   pointer-events: none;
+  will-change: transform;
   animation: mytube-orb-float 3s ease-in-out infinite alternate;
 }
 
 .mytube-splash-orb-1 {
-  width: 340px;
-  height: 340px;
-  background: radial-gradient(circle, #7c3aed 0%, #c0148c 60%, transparent 100%);
-  top: calc(50% - 210px);
-  left: calc(50% - 220px);
+  width: 460px;
+  height: 460px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.72) 0%, rgba(192, 20, 140, 0.35) 38%, rgba(192, 20, 140, 0) 70%);
+  top: calc(50% - 270px);
+  left: calc(50% - 280px);
 }
 
 .mytube-splash-orb-2 {
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, #ff4500 0%, #0ea5e9 65%, transparent 100%);
-  bottom: calc(50% - 200px);
-  right: calc(50% - 210px);
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(255, 69, 0, 0.65) 0%, rgba(14, 165, 233, 0.32) 38%, rgba(14, 165, 233, 0) 70%);
+  bottom: calc(50% - 260px);
+  right: calc(50% - 270px);
   animation-delay: 0.4s;
 }
 
@@ -307,6 +308,16 @@ a { text-decoration: none; color: inherit; }
   height: 108px;
 }
 
+.mytube-splash-logo-glow {
+  position: absolute;
+  width: 144px;
+  height: 112px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(192, 20, 140, 0.48) 0%, rgba(124, 58, 237, 0.18) 48%, transparent 74%);
+  pointer-events: none;
+  transform: translate3d(0, 6px, 0);
+}
+
 .mytube-splash-ring {
   position: absolute;
   width: 104px;
@@ -315,6 +326,7 @@ a { text-decoration: none; color: inherit; }
   border: 1.5px solid rgba(192, 20, 140, 0.55);
   opacity: 0;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 .mytube-splash-ring-1 {
@@ -327,7 +339,9 @@ a { text-decoration: none; color: inherit; }
 }
 
 .mytube-splash-svg {
+  position: relative;
   overflow: visible;
+  will-change: transform, opacity;
   animation: mytube-logo-pop 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -346,6 +360,7 @@ a { text-decoration: none; color: inherit; }
 .mytube-splash-play {
   transform-origin: 20px 15px;
   opacity: 0;
+  will-change: transform, opacity;
   animation: mytube-play-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 0.26s forwards;
 }
 
@@ -369,9 +384,10 @@ a { text-decoration: none; color: inherit; }
   display: inline-block;
   color: #ffffff;
   opacity: 0;
-  transform: translateY(16px) scale(0.92);
+  will-change: transform, opacity;
+  transform: translate3d(0, 16px, 0) scale3d(0.92, 0.92, 1);
   animation: mytube-letter-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  text-shadow: 0 4px 24px rgba(192, 20, 140, 0.35);
+  text-shadow: 0 4px 20px rgba(192, 20, 140, 0.35);
 }
 
 .mytube-splash-tagline {
@@ -380,7 +396,8 @@ a { text-decoration: none; color: inherit; }
   letter-spacing: 0.28em;
   color: rgba(255, 255, 255, 0.58);
   opacity: 0;
-  transform: translateY(8px);
+  will-change: transform, opacity;
+  transform: translate3d(0, 8px, 0);
   animation: mytube-tagline-fade 0.6s ease-out 0.68s forwards;
 }
 
@@ -395,28 +412,28 @@ a { text-decoration: none; color: inherit; }
 
 .mytube-splash-bar-fill {
   height: 100%;
-  width: 0%;
+  width: 100%;
   border-radius: 999px;
+  transform-origin: left center;
+  transform: scaleX(0);
+  will-change: transform;
   background: linear-gradient(90deg, #4B0FD4 0%, #C0148C 45%, #FF4500 80%, #0EA5E9 100%);
-  box-shadow: 0 0 12px rgba(255, 69, 0, 0.65);
+  box-shadow: 0 0 10px rgba(255, 69, 0, 0.55);
   animation: mytube-bar-progress 1.55s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
 }
 
 @keyframes mytube-logo-pop {
   0% {
     opacity: 0;
-    transform: scale(0.55) rotate(-8deg);
-    filter: blur(8px);
+    transform: scale3d(0.55, 0.55, 1) rotate(-8deg);
   }
   65% {
     opacity: 1;
-    transform: scale(1.06) rotate(1.5deg);
-    filter: blur(0px);
+    transform: scale3d(1.06, 1.06, 1) rotate(1.5deg);
   }
   100% {
     opacity: 1;
-    transform: scale(1) rotate(0deg);
-    filter: blur(0px);
+    transform: scale3d(1, 1, 1) rotate(0deg);
   }
 }
 
@@ -429,48 +446,48 @@ a { text-decoration: none; color: inherit; }
 @keyframes mytube-play-pop {
   0% {
     opacity: 0;
-    transform: scale(0.3) translateX(-4px);
+    transform: scale3d(0.3, 0.3, 1) translate3d(-4px, 0, 0);
   }
   100% {
     opacity: 0.96;
-    transform: scale(1) translateX(0);
+    transform: scale3d(1, 1, 1) translate3d(0, 0, 0);
   }
 }
 
 @keyframes mytube-ring-pulse {
   0% {
     opacity: 0.75;
-    transform: scale(0.82);
+    transform: scale3d(0.82, 0.82, 1);
   }
   100% {
     opacity: 0;
-    transform: scale(1.65);
+    transform: scale3d(1.65, 1.65, 1);
   }
 }
 
 @keyframes mytube-letter-rise {
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
   }
 }
 
 @keyframes mytube-tagline-fade {
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes mytube-bar-progress {
-  0%   { width: 0%; }
-  45%  { width: 62%; }
-  100% { width: 100%; }
+  0%   { transform: scaleX(0); }
+  45%  { transform: scaleX(0.62); }
+  100% { transform: scaleX(1); }
 }
 
 @keyframes mytube-orb-float {
-  0%   { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(16px, -14px) scale(1.08); }
+  0%   { transform: translate3d(0, 0, 0) scale3d(1, 1, 1); }
+  100% { transform: translate3d(16px, -14px, 0) scale3d(1.08, 1.08, 1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
